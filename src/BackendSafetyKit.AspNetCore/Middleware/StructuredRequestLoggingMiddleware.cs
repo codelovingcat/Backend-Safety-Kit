@@ -11,14 +11,17 @@ namespace BackendSafetyKit.AspNetCore.Middleware;
 internal sealed partial class StructuredRequestLoggingMiddleware(
     RequestDelegate next,
     IOptions<BackendSafetyOptions> options,
+    ISensitiveDataMasker masker,
     ILogger<StructuredRequestLoggingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var loggingOptions = options.Value.RequestLogging;
+        var backendOptions = options.Value;
+        var loggingOptions = backendOptions.RequestLogging;
         loggingOptions.Validate();
+        backendOptions.SensitiveDataMasking.Validate();
 
         var startTimestamp = Stopwatch.GetTimestamp();
         Exception? unhandledException = null;
@@ -74,14 +77,16 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
             options.AllowedRequestHeaders,
             options.DeniedRequestHeaders,
             options.MaxHeaderCount,
-            options.MaxMetadataValueLength);
+            options.MaxMetadataValueLength,
+            masker);
 
         var responseHeaders = CaptureHeaders(
             context.Response.Headers,
             options.AllowedResponseHeaders,
             options.DeniedResponseHeaders,
             options.MaxHeaderCount,
-            options.MaxMetadataValueLength);
+            options.MaxMetadataValueLength,
+            masker);
 
         var failureType = unhandledException?.GetType().FullName;
         var isFailure = unhandledException is not null || statusCode >= 400;
@@ -140,7 +145,8 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
         ISet<string> allowedHeaders,
         ISet<string> deniedHeaders,
         int maxHeaderCount,
-        int maxValueLength)
+        int maxValueLength,
+        ISensitiveDataMasker masker)
     {
         if (maxHeaderCount == 0 || allowedHeaders.Count == 0)
         {
@@ -163,11 +169,12 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
             }
 
             var value = FormatHeaderValue(values, maxValueLength);
+            var maskedValue = masker.MaskString(value, headerName) ?? string.Empty;
 
             result ??= new Dictionary<string, string>(
                 StringComparer.OrdinalIgnoreCase);
 
-            result[headerName] = value;
+            result[headerName] = maskedValue;
         }
 
         return result;

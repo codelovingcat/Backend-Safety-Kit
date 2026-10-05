@@ -184,20 +184,57 @@ A denylist entry takes precedence over an allowlist entry. Remove a default deny
 
 ### 5. Sensitive Data Masking
 
-Sensitive values should be protected before they can reach logs.
+The kit provides a non-mutating masking component through `ISensitiveDataMasker`. It can redact sensitive scalar values and copy nested dictionaries, collections, and public object properties into a safe representation.
 
-Default protection should cover common values such as:
+The default rules cover common sensitive names such as:
 
 - Passwords
 - API keys
 - Access tokens
 - Refresh tokens
-- Authorization headers
-- Cookies
+- Client secrets
+- Authorization and proxy-authorization values
+- Cookies and set-cookie values
+- Common authentication token headers
 
-Consumers must be able to add custom sensitive field names.
+Matching is case-insensitive and exact by default. Applications can add contains, starts-with, or ends-with rules for domain-specific names:
 
-The masking system must not mutate the application's original objects.
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.SensitiveDataMasking.AddRule("CustomerSecret");
+
+    options.SensitiveDataMasking.AddRule(
+        "credential",
+        SensitiveDataMatchMode.Contains);
+});
+```
+
+Full redaction is the default:
+
+```text
+customer-secret-42 -> [REDACTED]
+```
+
+Partial masking is disabled by default and requires explicit opt-in on both the options and the individual rule:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.SensitiveDataMasking.AllowPartialMasking = true;
+
+    options.SensitiveDataMasking.AddRule(
+        "accessToken",
+        SensitiveDataMatchMode.Exact,
+        SensitiveDataMaskMode.Partial,
+        visiblePrefixLength: 2,
+        visibleSuffixLength: 4);
+});
+```
+
+The masker never changes the original application object. When structured data is masked, a new dictionary/list representation is returned.
+
+The request logging middleware uses the masker for allowlisted headers. This provides a second protection layer when an application explicitly removes a header from the logging denylist.
 
 ### 6. Request Timing and Diagnostics
 
@@ -276,7 +313,7 @@ Contains reusable, framework-independent primitives and contracts.
 Examples:
 
 - Options contracts
-- Masking rules
+- Sensitive-data masking rules
 - Diagnostic abstractions
 - Shared policies
 - Reusable utilities

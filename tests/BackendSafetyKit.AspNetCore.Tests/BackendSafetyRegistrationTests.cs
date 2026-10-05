@@ -21,6 +21,8 @@ public sealed class BackendSafetyRegistrationTests
         var options = provider.GetRequiredService<IOptions<BackendSafetyOptions>>();
 
         Assert.NotNull(options.Value);
+        Assert.IsType<SensitiveDataMasker>(
+            provider.GetRequiredService<ISensitiveDataMasker>());
     }
 
     [Fact]
