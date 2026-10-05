@@ -148,14 +148,14 @@ public sealed class SampleApiIntegrationTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var log = Assert.Single(
+        Assert.Contains(
             factory.Logs,
             entry =>
                 entry.EventId == 2001 &&
                 entry.Properties.TryGetValue("RequestHeaders", out var headers) &&
-                headers?.ToString()?.Contains("[REDACTED]", StringComparison.Ordinal) == true);
-
-        Assert.NotNull(log);
+                headers is IReadOnlyDictionary<string, string> requestHeaders &&
+                requestHeaders.TryGetValue("X-Api-Key", out var maskedValue) &&
+                maskedValue == "[REDACTED]");
     }
 
     [Fact]
