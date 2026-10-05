@@ -39,7 +39,7 @@ public sealed class StructuredRequestLoggingMiddlewareTests
         Assert.Equal("api.example.test", entry.Properties["Host"]?.ToString());
         Assert.Equal(false, entry.Properties["IsFailure"]);
         Assert.Null(entry.Properties["FailureType"]);
-        Assert.True(Convert.ToDouble(entry.Properties["DurationMs"]) >= 0);
+        Assert.True(Convert.ToDouble(entry.Properties["DurationMs"], System.Globalization.CultureInfo.InvariantCulture) >= 0);
     }
 
     [Fact]
