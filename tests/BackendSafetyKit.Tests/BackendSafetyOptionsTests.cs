@@ -6,7 +6,7 @@ namespace BackendSafetyKit.Tests;
 public sealed class BackendSafetyOptionsTests
 {
     [Fact]
-    public void Options_CanBeCreatedWithSafeDefaults()
+    public void OptionsCanBeCreatedWithSafeDefaults()
     {
         var options = new BackendSafetyOptions();
 
