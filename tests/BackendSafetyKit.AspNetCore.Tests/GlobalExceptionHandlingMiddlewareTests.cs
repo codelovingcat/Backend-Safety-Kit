@@ -3,9 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
 using System.Text;
-using System.Text.Json;
 using Xunit;
 
 namespace BackendSafetyKit.AspNetCore.Tests;
@@ -132,9 +130,6 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
 
     private sealed class StartedResponseFeature(Stream body) : IHttpResponseFeature
     {
-        private readonly List<Func<object, Task>> _onStarting = [];
-        private readonly List<Func<object, Task>> _onCompleted = [];
-
         public int StatusCode { get; set; } = StatusCodes.Status200OK;
 
         public string? ReasonPhrase { get; set; }
@@ -150,12 +145,10 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
 
         public void OnStarting(Func<object, Task> callback, object state)
         {
-            _onStarting.Add(_ => callback(state));
         }
 
         public void OnCompleted(Func<object, Task> callback, object state)
         {
-            _onCompleted.Add(_ => callback(state));
         }
     }
 
