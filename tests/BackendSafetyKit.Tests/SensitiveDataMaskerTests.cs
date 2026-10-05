@@ -80,7 +80,7 @@ public sealed class SensitiveDataMaskerTests
         options.AllowPartialMasking = true;
         var partiallyMasked = masker.MaskString("secret-token", "accessToken");
 
-        Assert.Equal("se*******en", partiallyMasked);
+        Assert.Equal("se********en", partiallyMasked);
         Assert.DoesNotContain("secret-token", partiallyMasked, StringComparison.Ordinal);
     }
 
@@ -118,9 +118,10 @@ public sealed class SensitiveDataMaskerTests
 
         var originalProfile = Assert.IsType<Dictionary<string, object?>>(source["Profile"]);
         Assert.Equal("nested-secret", originalProfile["Password"]);
-        Assert.Equal(
-            "array-secret",
-            Assert.IsType<Dictionary<string, object?>>(source["Tokens"]).["AccessToken"]);
+        var originalTokens = Assert.IsType<object?[]>(source["Tokens"]);
+        var originalTokenObject =
+            Assert.IsType<Dictionary<string, object?>>(originalTokens[0]);
+        Assert.Equal("array-secret", originalTokenObject["AccessToken"]);
     }
 
     [Fact]
