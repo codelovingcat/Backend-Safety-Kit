@@ -16,6 +16,11 @@ public sealed class BackendSafetyFeatureOptions
     public bool EnableRequestLogging { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets a value indicating whether distributed tracing is enabled.
+    /// </summary>
+    public bool EnableDistributedTracing { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets a value indicating whether request timing diagnostics are enabled.
     /// </summary>
     public bool EnableRequestTiming { get; set; } = true;
