@@ -1,4 +1,5 @@
 using BackendSafetyKit;
+using System.Reflection;
 using Xunit;
 
 namespace BackendSafetyKit.Tests;
@@ -133,6 +134,30 @@ public sealed class SensitiveDataMaskerTests
     }
 
     [Fact]
+    public void ReflectionMetadataIsCachedPerType()
+    {
+        var masker = new SensitiveDataMasker(new SensitiveDataMaskingOptions());
+        var source = new CacheProbe("secret");
+
+        var cacheField = typeof(SensitiveDataMasker).GetField(
+            "PropertyMetadataCache",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
+        Assert.NotNull(cacheField);
+
+        var cache = Assert.IsAssignableFrom<System.Collections.IDictionary>(
+            cacheField.GetValue(null));
+
+        var initialCount = cache.Count;
+
+        masker.Mask(source);
+        masker.Mask(source);
+
+        Assert.Equal(initialCount + 1, cache.Count);
+        Assert.Contains(typeof(CacheProbe), cache.Keys);
+    }
+
+    [Fact]
     public void NestedDictionariesAndArraysAreMaskedWithoutMutation()
     {
         var options = new SensitiveDataMaskingOptions();
@@ -192,4 +217,6 @@ public sealed class SensitiveDataMaskerTests
     private sealed record LoginRequest(Credentials Credentials);
 
     private sealed record Credentials(string Username, string Password);
+
+    private sealed record CacheProbe(string Password);
 }
