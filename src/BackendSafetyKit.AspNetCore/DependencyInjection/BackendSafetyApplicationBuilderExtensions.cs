@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Builder;
 
 namespace BackendSafetyKit.AspNetCore.DependencyInjection;
 
+/// <summary>
+/// Provides extension methods for configuring Backend Safety Kit in the ASP.NET Core application pipeline.
+/// </summary>
 public static class BackendSafetyApplicationBuilderExtensions
 {
     /// <summary>
