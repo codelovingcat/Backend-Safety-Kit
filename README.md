@@ -41,6 +41,18 @@ app.UseBackendSafety();
 
 The package should work safely with minimal configuration. Advanced applications can configure individual features when needed.
 
+Individual ASP.NET Core middleware features can also be disabled explicitly when an application does not need them:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.Features.EnableRequestLogging = false;
+    options.Features.EnableHttpSecurity = false;
+});
+```
+
+The default is to enable all middleware features. Disabling a feature removes its middleware from the request pipeline rather than leaving a no-op middleware in place. Sensitive-data masking remains available as a protection layer for diagnostics and is not silently disabled by feature toggles.
+
 Configuration is validated during application startup. Invalid Backend Safety options fail through ASP.NET Core hosting startup validation instead of being silently accepted. The same validation is also used by the built-in health check, which reports an unhealthy state without exposing configuration values.
 
 ## Initial Feature Set
@@ -375,6 +387,8 @@ app.MapHealthChecks("/health");
 The integration tests boot the sample with `WebApplicationFactory` and exercise the HTTP pipeline without external infrastructure.
 
 ## Request Pipeline
+
+The default request pipeline includes all enabled middleware features. Individual features can be disabled through `BackendSafetyOptions.Features`; disabled middleware is not added to the pipeline.
 
 The implemented request pipeline is:
 
