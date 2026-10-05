@@ -27,6 +27,11 @@ internal sealed class HttpSecurityMiddleware(
             (context, securityOptions));
 
         await next(context);
+
+        if (!context.Response.HasStarted)
+        {
+            ApplySecurityHeaders(context, securityOptions);
+        }
     }
 
     private static void ApplyRequestBodySizeLimit(
