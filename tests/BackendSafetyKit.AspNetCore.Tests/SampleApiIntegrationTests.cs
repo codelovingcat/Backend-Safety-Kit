@@ -23,8 +23,8 @@ public sealed class SampleApiIntegrationTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("nosniff", GetHeader(response, "X-Content-Type-Options"));
         Assert.False(string.IsNullOrWhiteSpace(GetHeader(response, "X-Correlation-ID")));
-        Assert.Contains(""id":"42"", body);
-        Assert.Contains(""status":"ready"", body);
+        Assert.Contains("\"id\":\"42\"", body);
+        Assert.Contains("\"status\":\"ready\"", body);
     }
 
     [Fact]
