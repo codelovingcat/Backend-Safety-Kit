@@ -30,7 +30,7 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
         var response = await ReadResponseAsync(context);
 
         Assert.Equal(StatusCodes.Status500InternalServerError, context.Response.StatusCode);
-        Assert.Equal("application/json; charset=utf-8", context.Response.ContentType);
+        Assert.Equal("application/problem+json; charset=utf-8", context.Response.ContentType);
         Assert.DoesNotContain("super-secret-exception-message", response);
         Assert.DoesNotContain("InvalidOperationException", response);
         Assert.Contains("An unexpected error occurred.", response);
