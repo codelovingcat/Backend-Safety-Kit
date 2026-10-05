@@ -1,6 +1,9 @@
 using BackendSafetyKit;
 using BackendSafetyKit.AspNetCore.Correlation;
+using BackendSafetyKit.AspNetCore.Writers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace BackendSafetyKit.AspNetCore.DependencyInjection;
@@ -21,6 +24,10 @@ public static class BackendSafetyServiceCollectionExtensions
         Action<BackendSafetyOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IProblemDetailsWriter, BackendSafetyProblemDetailsWriter>());
+        services.AddProblemDetails();
 
         var options = services.AddOptions<BackendSafetyOptions>()
             .ValidateOnStart();

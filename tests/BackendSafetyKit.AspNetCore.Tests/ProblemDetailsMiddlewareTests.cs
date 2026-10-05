@@ -11,6 +11,17 @@ namespace BackendSafetyKit.AspNetCore.Tests;
 public sealed class ProblemDetailsMiddlewareTests
 {
     [Fact]
+    public void BackendSafetyRegistersNativeProblemDetailsService()
+    {
+        var services = new ServiceCollection();
+        services.AddBackendSafety();
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.NotNull(provider.GetRequiredService<IProblemDetailsService>());
+    }
+
+    [Fact]
     public async Task ExceptionReturnsStandardProblemDetailsWithoutSensitiveDetail()
     {
         var services = new ServiceCollection();
@@ -81,6 +92,29 @@ public sealed class ProblemDetailsMiddlewareTests
         Assert.Equal(
             "order-42",
             root.GetProperty("errors").GetProperty("orderId")[0].GetString());
+    }
+
+    [Fact]
+    public async Task NativeProblemDetailsFallsBackToPackageJsonWhenAcceptIsUnsupported()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddBackendSafety();
+
+        var app = BuildPipeline(
+            services,
+            _ => throw new InvalidOperationException("hidden"));
+
+        var context = CreateContext();
+        context.Request.Headers.Accept = "text/html";
+
+        await app(context);
+
+        var body = await ReadResponseAsync(context);
+
+        Assert.Equal("application/problem+json", context.Response.ContentType?.Split(';')[0]);
+        Assert.Contains("\"status\":500", body);
+        Assert.DoesNotContain("hidden", body);
     }
 
     [Fact]
