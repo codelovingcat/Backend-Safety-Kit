@@ -232,9 +232,12 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
             return options.MaskValue;
         }
 
-        return value is string stringValue
-            ? ApplyPartialMask(stringValue, rule)
-            : options.MaskValue;
+        if (value is not string stringValue || stringValue.Length == 0)
+        {
+            return options.MaskValue;
+        }
+
+        return ApplyPartialMask(stringValue, rule);
     }
 
     private static string ApplyPartialMask(
@@ -243,7 +246,7 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
     {
         if (value.Length == 0)
         {
-            return options.MaskValue;
+            return new string(rule.MaskCharacter, 1);
         }
 
         var prefixLength = Math.Min(rule.VisiblePrefixLength, value.Length);
