@@ -54,9 +54,10 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
         }
 
         var rule = FindRule(fieldName);
-        return rule is null
-            ? value
-            : ApplyRule(value, rule);
+
+        return rule.HasValue
+            ? ApplyRule(value, rule.Value)
+            : value;
     }
 
     private object? MaskCore(
@@ -72,9 +73,9 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
 
         var rule = FindRule(fieldName);
 
-        if (rule is not null)
+        if (rule.HasValue)
         {
-            return ApplyRule(value, rule);
+            return ApplyRule(value, rule.Value);
         }
 
         if (value is string)
@@ -165,7 +166,7 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
 
             foreach (var item in enumerable)
             {
-                if (count++ >= options.MaxCollectionItems)
+                if (count++ >= maxCollectionItems)
                 {
                     result.Add("[TRUNCATED]");
                     break;
