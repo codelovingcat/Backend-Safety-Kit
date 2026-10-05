@@ -61,7 +61,6 @@ internal sealed partial class RequestTimingMiddleware(
             }
 
             RecordMetrics(timing);
-            RecordMetrics(timing);
             InvokeCompletionHook(timingOptions, timing);
         }
     }
