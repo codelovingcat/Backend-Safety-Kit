@@ -77,18 +77,6 @@ internal sealed partial class RequestTimingMiddleware(
         }
     }
 
-    private void RecordMetrics(RequestTimingContext timing)
-    {
-        try
-        {
-            BackendSafetyMetrics.RecordHttpRequest(timing);
-        }
-        catch (Exception exception)
-        {
-            LogMetricsFailure(logger, exception);
-        }
-    }
-
     private void InvokeCompletionHook(
         RequestTimingOptions timingOptions,
         RequestTimingContext timing)
