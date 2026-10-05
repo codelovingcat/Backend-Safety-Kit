@@ -11,7 +11,7 @@ namespace BackendSafetyKit.AspNetCore.Tests;
 
 public sealed class CorrelationIdMiddlewareTests
 {
-    private static readonly Action<ILogger> DownstreamLog =
+    private static readonly Action<ILogger, Exception?> DownstreamLog =
         LoggerMessage.Define(
             LogLevel.Information,
             new EventId(2000, "DownstreamRequest"),
@@ -243,7 +243,7 @@ public sealed class CorrelationIdMiddlewareTests
             _ =>
             {
                 var logger = _.RequestServices.GetRequiredService<ILogger<CorrelationIdMiddlewareTests>>();
-                DownstreamLog(logger);
+                DownstreamLog(logger, null);
                 return Task.CompletedTask;
             });
 
