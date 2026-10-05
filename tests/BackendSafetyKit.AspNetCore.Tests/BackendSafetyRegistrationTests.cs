@@ -83,11 +83,11 @@ public sealed class BackendSafetyRegistrationTests
             services,
             context =>
             {
-                var accessor = context.RequestServices
+                _ = context.RequestServices
                     .GetRequiredService<ICorrelationIdAccessor>();
 
-                return Task.FromResult(
-                    accessor.CorrelationId ?? string.Empty);
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return Task.CompletedTask;
             });
 
         var results = await Task.WhenAll(
