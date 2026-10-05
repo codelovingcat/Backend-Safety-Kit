@@ -226,23 +226,21 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
 
     private string ApplyRule(object value, SensitiveDataMaskingRule rule)
     {
-        return ApplyRule(
-            value.ToString() ?? string.Empty,
-            rule,
-            options);
-    }
-
-    private static string ApplyRule(
-        string value,
-        SensitiveDataMaskingRule rule,
-        SensitiveDataMaskingOptions options)
-    {
         if (rule.MaskMode == SensitiveDataMaskMode.Full ||
             !options.AllowPartialMasking)
         {
             return options.MaskValue;
         }
 
+        return value is string stringValue
+            ? ApplyPartialMask(stringValue, rule)
+            : options.MaskValue;
+    }
+
+    private static string ApplyPartialMask(
+        string value,
+        SensitiveDataMaskingRule rule)
+    {
         if (value.Length == 0)
         {
             return options.MaskValue;
