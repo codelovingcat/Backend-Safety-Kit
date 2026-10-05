@@ -33,22 +33,42 @@ public sealed class ExceptionHandlingOptions
     {
         ArgumentNullException.ThrowIfNull(exception);
 
-        var exceptionType = exception.GetType();
+        return GetMappedValue(StatusCodeMappings, exception.GetType())
+            ?? DefaultStatusCode;
+    }
 
-        if (StatusCodeMappings.TryGetValue(exceptionType, out var exactStatusCode))
+    private static int? GetMappedValue(
+        IDictionary<Type, int> mappings,
+        Type exceptionType)
+    {
+        if (mappings.TryGetValue(exceptionType, out var exactStatusCode))
         {
             return exactStatusCode;
         }
 
-        foreach (var mapping in StatusCodeMappings)
+        var bestMapping = mappings
+            .Where(mapping => mapping.Key.IsAssignableFrom(exceptionType))
+            .OrderByDescending(mapping => GetInheritanceDepth(mapping.Key))
+            .ThenBy(mapping => mapping.Key.FullName, StringComparer.Ordinal)
+            .FirstOrDefault();
+
+        return bestMapping.Equals(default(KeyValuePair<Type, int>))
+            ? null
+            : bestMapping.Value;
+    }
+
+    private static int GetInheritanceDepth(Type type)
+    {
+        var depth = 0;
+        var current = type;
+
+        while (current.BaseType is not null)
         {
-            if (mapping.Key.IsAssignableFrom(exceptionType))
-            {
-                return mapping.Value;
-            }
+            depth++;
+            current = current.BaseType;
         }
 
-        return DefaultStatusCode;
+        return depth;
     }
 
     internal void Validate()
