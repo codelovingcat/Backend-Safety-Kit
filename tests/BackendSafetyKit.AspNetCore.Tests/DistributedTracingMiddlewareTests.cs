@@ -151,7 +151,7 @@ public sealed class DistributedTracingMiddlewareTests
         IServiceCollection services,
         RequestDelegate terminal)
     {
-        using var provider = services.BuildServiceProvider();
+        var provider = services.BuildServiceProvider();
         var builder = new ApplicationBuilder(provider);
 
         builder.UseBackendSafety();
