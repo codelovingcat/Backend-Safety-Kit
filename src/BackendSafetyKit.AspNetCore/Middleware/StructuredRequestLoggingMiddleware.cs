@@ -77,14 +77,16 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
             options.AllowedRequestHeaders,
             options.DeniedRequestHeaders,
             options.MaxHeaderCount,
-            options.MaxMetadataValueLength);
+            options.MaxMetadataValueLength,
+            masker);
 
         var responseHeaders = CaptureHeaders(
             context.Response.Headers,
             options.AllowedResponseHeaders,
             options.DeniedResponseHeaders,
             options.MaxHeaderCount,
-            options.MaxMetadataValueLength);
+            options.MaxMetadataValueLength,
+            masker);
 
         var failureType = unhandledException?.GetType().FullName;
         var isFailure = unhandledException is not null || statusCode >= 400;
