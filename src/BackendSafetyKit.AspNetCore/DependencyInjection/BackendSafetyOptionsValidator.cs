@@ -35,6 +35,11 @@ internal sealed class BackendSafetyOptionsValidator : IValidateOptions<BackendSa
 
         ValidateSection(
             failures,
+            "DistributedTracing",
+            options.DistributedTracing.Validate);
+
+        ValidateSection(
+            failures,
             "SensitiveDataMasking",
             options.SensitiveDataMasking.Validate);
 

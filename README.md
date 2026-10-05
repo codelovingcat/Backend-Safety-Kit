@@ -163,7 +163,28 @@ app.UseBackendSafety();
 
 Custom header names and ID generation are supported through CorrelationIdOptions.
 
-### 4. Structured Request Logging
+### 4. Distributed Tracing Context
+
+The kit provides a dependency-free `System.Diagnostics.ActivitySource` named `BackendSafetyKit` for request tracing. The ASP.NET Core middleware creates a server activity when distributed tracing is enabled and no upstream `Activity.Current` already exists.
+
+Incoming W3C `traceparent` and `tracestate` headers are used as the remote parent context. Invalid or multi-valued trace headers are ignored rather than preventing request processing.
+
+The feature is enabled by default:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.Features.EnableDistributedTracing = true;
+    options.DistributedTracing.ActivityName =
+        "BackendSafetyKit.HttpRequest";
+});
+```
+
+The package does not export telemetry or require OpenTelemetry. An application or a future optional integration package can subscribe to `BackendSafetyDiagnostics.ActivitySource`.
+
+An existing server activity is reused, preventing duplicate request spans when the hosting stack or an observability integration has already created `Activity.Current`. Disabling distributed tracing removes the package middleware without affecting correlation IDs or request handling.
+
+### 5. Structured Request Logging
 
 The library writes one structured completion log for each request through standard `Microsoft.Extensions.Logging` abstractions.
 
@@ -423,6 +444,9 @@ The implemented request pipeline is:
            |
            v
     Correlation / Request ID
+           |
+           v
+    Distributed Trace Context
            |
            v
     Structured Request Logging
