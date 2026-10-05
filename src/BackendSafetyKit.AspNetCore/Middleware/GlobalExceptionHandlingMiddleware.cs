@@ -11,9 +11,6 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
     IOptions<BackendSafetyOptions> options,
     ILogger<GlobalExceptionHandlingMiddleware> logger)
 {
-    private static readonly EventId UnhandledExceptionEvent =
-        new(1000, nameof(UnhandledExceptionEvent));
-
     public async Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
