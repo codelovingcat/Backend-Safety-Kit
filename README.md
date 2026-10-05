@@ -422,6 +422,19 @@ The implemented request pipeline is:
 
 The structured logging middleware wraps request timing so the completion log uses the same monotonic duration measurement produced by the timing middleware. The timing middleware wraps the exception boundary so handled failures receive their final HTTP status code.
 
+## Options Lifecycle and Service Lifetimes
+
+Backend Safety Kit treats application options as startup configuration. Configure the options while registering the services and treat them as immutable after the application starts.
+
+The built-in service lifetimes are intentional:
+
+- `IOptions<BackendSafetyOptions>` uses the standard ASP.NET Core options lifetime for application configuration.
+- `ISensitiveDataMasker` is registered as a singleton and snapshots its masking configuration when it is created, so request execution does not depend on a mutable options object.
+- `ICorrelationIdAccessor` is scoped so correlation IDs remain isolated to the current request scope.
+- Middleware instances do not store request-specific state in static or shared mutable fields; request state is kept in the current `HttpContext`.
+
+This design allows the runtime services to be used concurrently without cross-request state leakage. Runtime mutation of the registered options is not supported.
+
 ## Architecture
 
 The project deliberately separates framework-independent code from ASP.NET Core integration.
