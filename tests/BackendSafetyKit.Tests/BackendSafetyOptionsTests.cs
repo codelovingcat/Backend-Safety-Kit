@@ -1,4 +1,5 @@
 using BackendSafetyKit;
+using Xunit;
 
 namespace BackendSafetyKit.Tests;
 
