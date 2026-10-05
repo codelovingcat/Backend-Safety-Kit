@@ -20,9 +20,11 @@ public static class BackendSafetyServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        var options = services.AddOptions<BackendSafetyOptions>();
+
         if (configure is not null)
         {
-            services.Configure(configure);
+            options.Configure(configure);
         }
 
         return services;
