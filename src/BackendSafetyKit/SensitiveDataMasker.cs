@@ -115,7 +115,7 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
                     break;
                 }
 
-                var key = entry.Key?.ToString() ?? string.Empty;
+                var key = entry.Key as string ?? string.Empty;
                 result[key] = MaskCore(
                     entry.Value,
                     key,
