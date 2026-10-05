@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 using BackendSafetyKit;
 using Microsoft.AspNetCore.Http;
@@ -23,7 +22,6 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
         loggingOptions.Validate();
         backendOptions.SensitiveDataMasking.Validate();
 
-        var startTimestamp = Stopwatch.GetTimestamp();
         Exception? unhandledException = null;
 
         try
@@ -40,7 +38,6 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
             WriteCompletionLog(
                 context,
                 loggingOptions,
-                startTimestamp,
                 unhandledException);
         }
     }
@@ -48,7 +45,6 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
     private void WriteCompletionLog(
         HttpContext context,
         RequestLoggingOptions options,
-        long startTimestamp,
         Exception? unhandledException)
     {
         var statusCode = context.Response.StatusCode;
@@ -63,8 +59,14 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
             return;
         }
 
+        var timing = context.Items.TryGetValue(
+            RequestTimingMiddleware.TimingItemKey,
+            out var timingValue)
+            ? timingValue as RequestTimingContext
+            : null;
+
         var durationMs = Math.Round(
-            Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds,
+            timing?.Duration.TotalMilliseconds ?? 0,
             3);
 
         var correlationId = context.TraceIdentifier;
