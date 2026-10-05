@@ -34,11 +34,14 @@ app.MapGet("/api/orders/{id}", (string id) => Results.Ok(new
     status = "ready"
 }));
 
-app.MapGet("/api/orders/missing", () =>
-    throw new KeyNotFoundException("order-42"));
+app.MapGet(
+    "/api/orders/missing",
+    static IResult () => throw new KeyNotFoundException("order-42"));
 
-app.MapGet("/api/validation", () =>
-    throw new ArgumentException("validation details must not be exposed"));
+app.MapGet(
+    "/api/validation",
+    static IResult () =>
+        throw new ArgumentException("validation details must not be exposed"));
 
 app.MapGet("/api/slow", async (CancellationToken cancellationToken) =>
 {
