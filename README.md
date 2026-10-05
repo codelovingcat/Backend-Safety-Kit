@@ -57,21 +57,50 @@ Goals:
 
 ### 2. Standardized ProblemDetails
 
-Errors should have a predictable HTTP representation.
+Handled API exceptions are returned as standards-aligned ProblemDetails responses using the `application/problem+json` content type.
+
+The default response includes:
+
+- `type`
+- `title`
+- `status`
+- `instance` when enabled
+- `traceId` when enabled
+
+Exception messages are not returned by default.
 
 Example:
 
 ```json
 {
-  "type": "...",
+  "type": "about:blank",
   "title": "An unexpected error occurred.",
   "status": 500,
   "instance": "/api/orders/42",
-  "traceId": "..."
+  "traceId": "00-..."
 }
 ```
 
-Applications should be able to customize safe fields and application-specific error codes without replacing the entire error pipeline.
+Applications can customize safe details, titles, application-specific error codes, and arbitrary ProblemDetails extensions:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.ExceptionHandling.Map<KeyNotFoundException>(404);
+
+    options.ProblemDetails
+        .MapErrorCode<KeyNotFoundException>("order_not_found")
+        .MapTitle<KeyNotFoundException>("Order was not found.");
+
+    options.ProblemDetails.Customize = context =>
+    {
+        context.Detail = "The requested order does not exist.";
+        context.Extensions["errors"] = new { orderId = "order-42" };
+    };
+});
+```
+
+Exception details can be enabled explicitly for development environments with `IncludeExceptionDetailInDevelopment`. Stack traces are never added automatically.
 
 ### 3. Correlation ID / Request ID
 
