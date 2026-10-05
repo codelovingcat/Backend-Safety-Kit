@@ -8,7 +8,11 @@ namespace BackendSafetyKit;
 /// </summary>
 public sealed class SensitiveDataMasker : ISensitiveDataMasker
 {
-    private readonly SensitiveDataMaskingOptions options;
+    private readonly string maskValue;
+    private readonly bool allowPartialMasking;
+    private readonly int maxDepth;
+    private readonly int maxCollectionItems;
+    private readonly MaskingRuleSnapshot[] rules;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SensitiveDataMasker"/> class.
@@ -18,7 +22,20 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
     {
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
-        this.options = options;
+
+        maskValue = options.MaskValue;
+        allowPartialMasking = options.AllowPartialMasking;
+        maxDepth = options.MaxDepth;
+        maxCollectionItems = options.MaxCollectionItems;
+        rules = options.Rules
+            .Select(rule => new MaskingRuleSnapshot(
+                rule.Name,
+                rule.MatchMode,
+                rule.MaskMode,
+                rule.VisiblePrefixLength,
+                rule.VisibleSuffixLength,
+                rule.MaskCharacter))
+            .ToArray();
     }
 
     /// <inheritdoc />
@@ -70,7 +87,7 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
             return value;
         }
 
-        if (depth >= options.MaxDepth)
+        if (depth >= maxDepth)
         {
             return "[TRUNCATED]";
         }
@@ -109,7 +126,7 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
 
             foreach (DictionaryEntry entry in dictionary)
             {
-                if (count++ >= options.MaxCollectionItems)
+                if (count++ >= maxCollectionItems)
                 {
                     result["$truncated"] = true;
                     break;
@@ -209,14 +226,14 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
         }
     }
 
-    private SensitiveDataMaskingRule? FindRule(string? fieldName)
+    private MaskingRuleSnapshot? FindRule(string? fieldName)
     {
         if (string.IsNullOrEmpty(fieldName))
         {
             return null;
         }
 
-        foreach (var rule in options.Rules)
+        foreach (var rule in rules)
         {
             if (rule.Matches(fieldName))
             {
@@ -227,17 +244,17 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
         return null;
     }
 
-    private string ApplyRule(object value, SensitiveDataMaskingRule rule)
+    private string ApplyRule(object value, MaskingRuleSnapshot rule)
     {
         if (rule.MaskMode == SensitiveDataMaskMode.Full ||
-            !options.AllowPartialMasking)
+            !allowPartialMasking)
         {
-            return options.MaskValue;
+            return maskValue;
         }
 
         if (value is not string stringValue || stringValue.Length == 0)
         {
-            return options.MaskValue;
+            return maskValue;
         }
 
         return ApplyPartialMask(stringValue, rule);
@@ -245,7 +262,7 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
 
     private static string ApplyPartialMask(
         string value,
-        SensitiveDataMaskingRule rule)
+        MaskingRuleSnapshot rule)
     {
         if (value.Length == 0)
         {
@@ -270,6 +287,33 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
             suffixLength == 0
                 ? string.Empty
                 : value.AsSpan(value.Length - suffixLength, suffixLength).ToString());
+    }
+
+    private readonly record struct MaskingRuleSnapshot(
+        string Name,
+        SensitiveDataMatchMode MatchMode,
+        SensitiveDataMaskMode MaskMode,
+        int VisiblePrefixLength,
+        int VisibleSuffixLength,
+        char MaskCharacter)
+    {
+        public bool Matches(string fieldName)
+        {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
+            return MatchMode switch
+            {
+                SensitiveDataMatchMode.Exact =>
+                    string.Equals(Name, fieldName, comparison),
+                SensitiveDataMatchMode.Contains =>
+                    fieldName.Contains(Name, comparison),
+                SensitiveDataMatchMode.StartsWith =>
+                    fieldName.StartsWith(Name, comparison),
+                SensitiveDataMatchMode.EndsWith =>
+                    fieldName.EndsWith(Name, comparison),
+                _ => false
+            };
+        }
     }
 
     private static bool IsSimpleValue(Type type) =>
