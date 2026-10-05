@@ -92,8 +92,8 @@ public sealed class HttpSecurityOptions
             throw new ArgumentException(requiredMessage, parameterName);
         }
 
-        if (value.Contains('\r', StringComparison.Ordinal) ||
-            value.Contains('\n', StringComparison.Ordinal))
+        if (value.Contains('\r') ||
+            value.Contains('\n'))
         {
             throw new ArgumentException(
                 "Header values cannot contain carriage return or line feed characters.",
