@@ -37,6 +37,11 @@ public sealed class BackendSafetyOptions
     public RequestLoggingOptions RequestLogging { get; } = new();
 
     /// <summary>
+    /// Gets the configuration for distributed tracing.
+    /// </summary>
+    public DistributedTracingOptions DistributedTracing { get; } = new();
+
+    /// <summary>
     /// Gets the configuration for sensitive data masking and redaction.
     /// </summary>
     public SensitiveDataMaskingOptions SensitiveDataMasking { get; } = new();
