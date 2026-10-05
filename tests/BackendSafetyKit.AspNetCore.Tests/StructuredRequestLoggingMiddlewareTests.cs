@@ -43,6 +43,29 @@ public sealed class StructuredRequestLoggingMiddlewareTests
     }
 
     [Fact]
+    public async Task DisabledRequestLoggingProducesNoCompletionLog()
+    {
+        var loggerProvider = new RecordingLoggerProvider();
+        var services = CreateServices(
+            loggerProvider,
+            options => options.Features.EnableRequestLogging = false);
+
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        await InvokeAsync(app, services, CreateContext());
+
+        Assert.DoesNotContain(
+            loggerProvider.Entries,
+            entry => entry.EventId.Id is >= 2001 and <= 2003);
+    }
+
+    [Fact]
     public async Task FailedResponseProducesErrorCompletionLogWithFailureContext()
     {
         var loggerProvider = new RecordingLoggerProvider();
