@@ -47,6 +47,27 @@ public sealed class RequestLoggingOptions
             StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// Gets or sets the log level used for successful request completion events.
+    /// Set to <see cref="RequestLoggingLogLevel.None"/> to disable these events.
+    /// </summary>
+    public RequestLoggingLogLevel SuccessfulRequestLogLevel { get; set; } =
+        RequestLoggingLogLevel.Information;
+
+    /// <summary>
+    /// Gets or sets the log level used for client-error completion events (HTTP 400-499).
+    /// Set to <see cref="RequestLoggingLogLevel.None"/> to disable these events.
+    /// </summary>
+    public RequestLoggingLogLevel ClientErrorLogLevel { get; set; } =
+        RequestLoggingLogLevel.Warning;
+
+    /// <summary>
+    /// Gets or sets the log level used for server-error completion events (HTTP 500+) and unhandled exceptions.
+    /// Set to <see cref="RequestLoggingLogLevel.None"/> to disable these events.
+    /// </summary>
+    public RequestLoggingLogLevel ServerErrorLogLevel { get; set; } =
+        RequestLoggingLogLevel.Error;
+
+    /// <summary>
     /// Gets or sets the maximum length of an individual logged metadata value.
     /// </summary>
     public int MaxMetadataValueLength { get; set; } = 256;
@@ -78,6 +99,31 @@ public sealed class RequestLoggingOptions
         ValidateHeaderNames(DeniedRequestHeaders);
         ValidateHeaderNames(AllowedResponseHeaders);
         ValidateHeaderNames(DeniedResponseHeaders);
+
+        ValidateLogLevel(
+            nameof(SuccessfulRequestLogLevel),
+            SuccessfulRequestLogLevel);
+
+        ValidateLogLevel(
+            nameof(ClientErrorLogLevel),
+            ClientErrorLogLevel);
+
+        ValidateLogLevel(
+            nameof(ServerErrorLogLevel),
+            ServerErrorLogLevel);
+    }
+
+    private static void ValidateLogLevel(
+        string optionName,
+        RequestLoggingLogLevel logLevel)
+    {
+        if (!Enum.IsDefined(logLevel))
+        {
+            throw new ArgumentOutOfRangeException(
+                optionName,
+                logLevel,
+                "The request logging log level is invalid.");
+        }
     }
 
     private static void ValidateHeaderNames(IEnumerable<string> headerNames)
