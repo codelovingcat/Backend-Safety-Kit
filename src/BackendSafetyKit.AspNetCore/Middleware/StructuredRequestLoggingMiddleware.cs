@@ -100,54 +100,53 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
 
         if (isServerError)
         {
-                LogCompletionError(
-                    logger,
-                    level,
-                    context.Request.Method,
-                    context.Request.Path.Value ?? "/",
-                    statusCode,
-                    durationMs,
-                    correlationId,
-                    host,
-                    isFailure,
-                    failureType,
-                    requestHeaders,
-                    responseHeaders);
-                return;
-
+            LogCompletionError(
+                logger,
+                level,
+                context.Request.Method,
+                context.Request.Path.Value ?? "/",
+                statusCode,
+                durationMs,
+                correlationId,
+                host,
+                isFailure,
+                failureType,
+                requestHeaders,
+                responseHeaders);
+            return;
         }
 
         if (isClientError)
         {
-                LogCompletionWarning(
-                    logger,
-                    level,
-                    context.Request.Method,
-                    context.Request.Path.Value ?? "/",
-                    statusCode,
-                    durationMs,
-                    correlationId,
-                    host,
-                    isFailure,
-                    failureType,
-                    requestHeaders,
-                    responseHeaders);
-                return;
+            LogCompletionWarning(
+                logger,
+                level,
+                context.Request.Method,
+                context.Request.Path.Value ?? "/",
+                statusCode,
+                durationMs,
+                correlationId,
+                host,
+                isFailure,
+                failureType,
+                requestHeaders,
+                responseHeaders);
+            return;
         }
 
         LogCompletionInformation(
-                    logger,
-                    level,
-                    context.Request.Method,
-                    context.Request.Path.Value ?? "/",
-                    statusCode,
-                    durationMs,
-                    correlationId,
-                    host,
-                    isFailure,
-                    failureType,
-                    requestHeaders,
-                    responseHeaders);
+            logger,
+            level,
+            context.Request.Method,
+            context.Request.Path.Value ?? "/",
+            statusCode,
+            durationMs,
+            correlationId,
+            host,
+            isFailure,
+            failureType,
+            requestHeaders,
+            responseHeaders);
     }
 
     private static LogLevel ToLogLevel(RequestLoggingLogLevel logLevel) =>
