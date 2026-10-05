@@ -38,17 +38,17 @@ public sealed class BackendSafetyMetricsTests
                 if (instrument.Name ==
                     "backend_safety_kit.http.server.request.count")
                 {
-                    requestCount += measurement.Value;
+                    requestCount += measurement;
                 }
                 else if (instrument.Name ==
                          "backend_safety_kit.http.server.request.error.count")
                 {
-                    errorCount += measurement.Value;
+                    errorCount += measurement;
                 }
                 else if (instrument.Name ==
                          "backend_safety_kit.http.server.request.slow.count")
                 {
-                    slowRequestCount += measurement.Value;
+                    slowRequestCount += measurement;
                 }
             });
 
@@ -59,7 +59,7 @@ public sealed class BackendSafetyMetricsTests
                         "backend_safety_kit.http.server.request.duration" &&
                     HasStatusCode(tags, 599))
                 {
-                    durationSeconds = measurement.Value;
+                    durationSeconds = measurement;
                 }
             });
 
