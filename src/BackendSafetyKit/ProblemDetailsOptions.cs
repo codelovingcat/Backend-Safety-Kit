@@ -107,7 +107,7 @@ public sealed class ProblemDetailsOptions
         ValidateMappings(TitleMappings, "title");
     }
 
-    internal void ValidateCustomization(ProblemDetailsCustomizationContext customization)
+    internal static void ValidateCustomization(ProblemDetailsCustomizationContext customization)
     {
         ArgumentNullException.ThrowIfNull(customization);
 
