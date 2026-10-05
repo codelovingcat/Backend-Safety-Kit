@@ -19,6 +19,7 @@ public static class BackendSafetyApplicationBuilderExtensions
 
         app.UseMiddleware<CorrelationIdMiddleware>();
         app.UseMiddleware<StructuredRequestLoggingMiddleware>();
+        app.UseMiddleware<RequestTimingMiddleware>();
         app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
         return app;

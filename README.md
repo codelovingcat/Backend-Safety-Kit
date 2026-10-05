@@ -238,17 +238,36 @@ The request logging middleware uses the masker for allowlisted headers. This pro
 
 ### 6. Request Timing and Diagnostics
 
-The package measures request duration using an appropriate monotonic elapsed-time mechanism.
+Request timing is measured with a monotonic clock so elapsed duration is not affected by wall-clock changes.
 
-It should support:
+The timing middleware provides:
 
 - Request duration
 - Configurable slow-request threshold
-- Optional slow-request logging
-- Correlation identifiers
-- Diagnostic extension points
+- Optional slow-request logging at a configurable log level
+- Correlation/request identifier
+- A completion callback for applications that want to export diagnostics elsewhere
 
-The package should remain lightweight and should not attempt to become a complete metrics platform.
+Slow-request logging is disabled by default. A hook can be registered without introducing a metrics provider:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.RequestTiming.SlowRequestThreshold =
+        TimeSpan.FromMilliseconds(750);
+
+    options.RequestTiming.EnableSlowRequestLogging = true;
+    options.RequestTiming.SlowRequestLogLevel =
+        RequestTimingLogLevel.Warning;
+
+    options.RequestTiming.OnCompleted = timing =>
+    {
+        // Export timing.Duration to your own metrics system.
+    };
+});
+```
+
+The completion callback receives only safe diagnostic metadata: method, path, status code, correlation ID, duration, and slow-request state. Request bodies and query strings are not included.
 
 ### 7. Secure-by-Default HTTP Configuration
 
@@ -287,6 +306,9 @@ The implemented request pipeline is:
     Structured Request Logging
            |
            v
+    Request Timing / Diagnostics
+           |
+           v
     Exception Boundary
            |
            v
@@ -300,7 +322,7 @@ The implemented request pipeline is:
            v
     Outgoing Response
 
-The request logging middleware wraps the exception boundary so handled failures are logged with their final HTTP status code.
+The structured logging middleware wraps request timing so the completion log uses the same monotonic duration measurement produced by the timing middleware. The timing middleware wraps the exception boundary so handled failures receive their final HTTP status code.
 
 ## Architecture
 

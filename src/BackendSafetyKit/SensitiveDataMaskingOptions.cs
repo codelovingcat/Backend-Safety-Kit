@@ -98,7 +98,7 @@ public sealed class SensitiveDataMaskingOptions
         }
     }
 
-    private static IList<SensitiveDataMaskingRule> CreateDefaultRules()
+    private static List<SensitiveDataMaskingRule> CreateDefaultRules()
     {
         return new List<SensitiveDataMaskingRule>
         {
