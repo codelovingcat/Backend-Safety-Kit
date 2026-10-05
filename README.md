@@ -244,7 +244,7 @@ Header allowlists and denylists can be configured when an application has a safe
 
 A denylist entry takes precedence over an allowlist entry. Remove a default denylist entry only when the application explicitly accepts the data-handling risk.
 
-### 5. Sensitive Data Masking
+### 6. Sensitive Data Masking
 
 The kit provides a non-mutating masking component through `ISensitiveDataMasker`. It can redact sensitive scalar values and copy nested dictionaries, collections, and public object properties into a safe representation.
 
@@ -298,7 +298,7 @@ The masker never changes the original application object. When structured data i
 
 The request logging middleware uses the masker for allowlisted headers. This provides a second protection layer when an application explicitly removes a header from the logging denylist.
 
-### 6. Request Timing and Diagnostics
+### 7. Request Timing and Diagnostics
 
 Request timing is measured with a monotonic clock so elapsed duration is not affected by wall-clock changes.
 
@@ -331,7 +331,34 @@ builder.Services.AddBackendSafety(options =>
 
 The completion callback receives only safe diagnostic metadata: method, path, status code, correlation ID, duration, and slow-request state. Request bodies and query strings are not included.
 
-### 7. Secure-by-Default HTTP Configuration
+### 8. Metrics
+
+The kit exposes a dependency-free `System.Diagnostics.Metrics.Meter` named `BackendSafetyKit`.
+
+HTTP request metrics are recorded from the existing request timing middleware:
+
+| Instrument | Type | Unit | Meaning |
+|---|---|---|---|
+| `backend_safety_kit.http.server.request.count` | Counter | `{request}` | Completed HTTP requests |
+| `backend_safety_kit.http.server.request.duration` | Histogram | `s` | Completed request duration |
+| `backend_safety_kit.http.server.request.error.count` | Counter | `{request}` | Completed requests with a 5xx status |
+| `backend_safety_kit.http.server.request.slow.count` | Counter | `{request}` | Requests at or above the configured slow threshold |
+
+Metric tags are deliberately limited to the HTTP method and response status code. Paths, query strings, correlation IDs, headers, request bodies, and other potentially high-cardinality or sensitive values are not emitted as metric tags.
+
+The core package does not export telemetry and does not require OpenTelemetry. Applications or the future optional OpenTelemetry package can subscribe to the meter:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics.AddMeter(BackendSafetyMetrics.MeterName);
+    });
+```
+
+The metrics layer does not make network calls. If a consumer's metrics listener throws while a request is being recorded, the request continues and the failure is written to the existing structured diagnostics logger.
+
+### 9. Secure-by-Default HTTP Configuration
 
 The kit applies a deliberately small set of HTTP hardening defaults through `HttpSecurityOptions`.
 
@@ -367,7 +394,7 @@ The package does not automatically configure HSTS, HTTPS redirection, authentica
 
 Existing ProblemDetails behavior remains safe by default: exception details are not returned unless explicitly enabled for development, and development-only details are still suppressed outside the Development environment.
 
-### 8. Health and Diagnostics
+### 10. Health and Diagnostics
 
 The kit can integrate with the standard ASP.NET Core Health Checks infrastructure without adding external services.
 
