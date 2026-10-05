@@ -43,9 +43,10 @@ public sealed class DistributedTracingMiddlewareTests
             "4bf92f3577b34da6a3ce929d0e0e4736"), observedActivity.TraceId);
         Assert.Equal(ActivitySpanId.CreateFromString(
             "00f067aa0ba902b7"), observedActivity.ParentSpanId);
-        Assert.True(observedActivity.ParentId?.Contains(
-            "00f067aa0ba902b7",
-            StringComparison.OrdinalIgnoreCase));
+        Assert.True(
+            observedActivity.ParentId?.Contains(
+                "00f067aa0ba902b7",
+                StringComparison.OrdinalIgnoreCase) == true);
         Assert.True(observedActivity.IsAllDataRequested);
         Assert.Null(Activity.Current);
     }
