@@ -59,7 +59,7 @@ public sealed class ExceptionMappingHardeningTests
         };
 
         Assert.Throws<ArgumentException>(
-            () => options.ValidateCustomization(customization));
+            () => ProblemDetailsOptions.ValidateCustomization(customization));
     }
 
     [Fact]
