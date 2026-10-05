@@ -107,6 +107,28 @@ public sealed class ProblemDetailsOptions
         ValidateMappings(TitleMappings, "title");
     }
 
+    internal static void ValidateCustomization(ProblemDetailsCustomizationContext customization)
+    {
+        ArgumentNullException.ThrowIfNull(customization);
+
+        if (string.IsNullOrWhiteSpace(customization.Type))
+        {
+            throw new ArgumentException(
+                "A ProblemDetails type is required after customization.",
+                nameof(customization));
+        }
+
+        foreach (var extension in customization.Extensions)
+        {
+            if (string.IsNullOrWhiteSpace(extension.Key))
+            {
+                throw new ArgumentException(
+                    "ProblemDetails extension names cannot be empty.",
+                    nameof(customization));
+            }
+        }
+    }
+
     private static string? GetMappedValue(
         IDictionary<Type, string> mappings,
         Type exceptionType)
@@ -116,15 +138,29 @@ public sealed class ProblemDetailsOptions
             return exactValue;
         }
 
-        foreach (var mapping in mappings)
+        var bestMapping = mappings
+            .Where(mapping => mapping.Key.IsAssignableFrom(exceptionType))
+            .OrderByDescending(mapping => GetInheritanceDepth(mapping.Key))
+            .ThenBy(mapping => mapping.Key.FullName, StringComparer.Ordinal)
+            .FirstOrDefault();
+
+        return bestMapping.Equals(default(KeyValuePair<Type, string>))
+            ? null
+            : bestMapping.Value;
+    }
+
+    private static int GetInheritanceDepth(Type type)
+    {
+        var depth = 0;
+        var current = type;
+
+        while (current.BaseType is not null)
         {
-            if (mapping.Key.IsAssignableFrom(exceptionType))
-            {
-                return mapping.Value;
-            }
+            depth++;
+            current = current.BaseType;
         }
 
-        return null;
+        return depth;
     }
 
     private static void ValidateMappings(
