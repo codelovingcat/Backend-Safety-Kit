@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>BackendSafetyKit</PackageId>
+    <Title>Backend Safety Kit</Title>
+    <Description>Production-safety and diagnostics primitives for ASP.NET Core applications.</Description>
+    <PackageTags>aspnetcore;backend;security;diagnostics;logging;problem-details;correlation-id</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RepositoryUrl>https://github.com/codelovingcat/Backend-Safety-Kit</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Version>0.1.0</Version>
+    <Authors>codelovingcat</Authors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\..\README.md"
+          Pack="true"
+          PackagePath="README.md"
+          PackageReadmeFile="README.md" />
+  </ItemGroup>
+</Project>
