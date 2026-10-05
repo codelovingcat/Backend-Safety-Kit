@@ -449,6 +449,16 @@ The implemented request pipeline is:
 
 The structured logging middleware wraps request timing so the completion log uses the same monotonic duration measurement produced by the timing middleware. The timing middleware wraps the exception boundary so handled failures receive their final HTTP status code.
 
+This ordering is a compatibility contract:
+
+- Correlation/request ID runs first so every downstream middleware sees the effective identifier.
+- Structured logging wraps timing so completion events can include the final timing result.
+- Request timing wraps HTTP security and exception handling so timing observes the final handled status code.
+- HTTP security wraps the exception boundary so configured security headers still apply to handled responses.
+- Exception handling is the innermost package boundary before the application pipeline.
+
+Regression tests cover these relationships together so future middleware changes cannot silently reorder the safety boundaries.
+
 ## Options Lifecycle and Service Lifetimes
 
 Backend Safety Kit treats application options as startup configuration. Configure the options while registering the services and treat them as immutable after the application starts.
