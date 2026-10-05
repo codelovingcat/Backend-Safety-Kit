@@ -22,12 +22,15 @@ public static class BackendSafetyServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        var options = services.AddOptions<BackendSafetyOptions>();
+        var options = services.AddOptions<BackendSafetyOptions>()
+            .ValidateOnStart();
 
         if (configure is not null)
         {
             options.Configure(configure);
         }
+
+        services.AddSingleton<IValidateOptions<BackendSafetyOptions>, BackendSafetyOptionsValidator>();
 
         services.AddScoped<CorrelationIdAccessor>();
         services.AddScoped<ICorrelationIdAccessor>(
@@ -40,4 +43,5 @@ public static class BackendSafetyServiceCollectionExtensions
 
         return services;
     }
+
 }
