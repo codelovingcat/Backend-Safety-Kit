@@ -5,4 +5,8 @@ namespace BackendSafetyKit;
 /// </summary>
 public sealed class BackendSafetyOptions
 {
+    /// <summary>
+    /// Gets the configuration for global exception handling.
+    /// </summary>
+    public ExceptionHandlingOptions ExceptionHandling { get; } = new();
 }

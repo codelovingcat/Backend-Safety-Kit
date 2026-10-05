@@ -4,17 +4,18 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Xunit;
 
 namespace BackendSafetyKit.AspNetCore.Tests;
 
 public sealed class BackendSafetyRegistrationTests
 {
     [Fact]
-    public void AddBackendSafety_RegistersOptions()
+    public void AddBackendSafetyRegistersOptions()
     {
         var services = new ServiceCollection();
 
-        services.AddBackendSafety(options => { });
+        services.AddBackendSafety();
 
         using var provider = services.BuildServiceProvider();
         var options = provider.GetRequiredService<IOptions<BackendSafetyOptions>>();
@@ -23,9 +24,12 @@ public sealed class BackendSafetyRegistrationTests
     }
 
     [Fact]
-    public async Task UseBackendSafety_AllowsRequestToReachEndpoint()
+    public async Task UseBackendSafetyAllowsRequestToReachEndpoint()
     {
         var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddBackendSafety();
+
         var builder = new ApplicationBuilder(services.BuildServiceProvider());
 
         var reachedEndpoint = false;
