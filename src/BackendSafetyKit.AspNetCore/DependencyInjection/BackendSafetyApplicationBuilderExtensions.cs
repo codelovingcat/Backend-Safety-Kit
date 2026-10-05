@@ -17,11 +17,36 @@ public static class BackendSafetyApplicationBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.UseMiddleware<CorrelationIdMiddleware>();
-        app.UseMiddleware<StructuredRequestLoggingMiddleware>();
-        app.UseMiddleware<RequestTimingMiddleware>();
-        app.UseMiddleware<HttpSecurityMiddleware>();
-        app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+        var options = app.ApplicationServices
+            .GetRequiredService<
+                Microsoft.Extensions.Options.IOptions<BackendSafetyKit.BackendSafetyOptions>>();
+
+        var features = options.Value.Features;
+
+        if (features.EnableCorrelationId)
+        {
+            app.UseMiddleware<CorrelationIdMiddleware>();
+        }
+
+        if (features.EnableRequestLogging)
+        {
+            app.UseMiddleware<StructuredRequestLoggingMiddleware>();
+        }
+
+        if (features.EnableRequestTiming)
+        {
+            app.UseMiddleware<RequestTimingMiddleware>();
+        }
+
+        if (features.EnableHttpSecurity)
+        {
+            app.UseMiddleware<HttpSecurityMiddleware>();
+        }
+
+        if (features.EnableExceptionHandling)
+        {
+            app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+        }
 
         return app;
     }
