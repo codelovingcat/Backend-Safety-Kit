@@ -151,18 +151,36 @@ Custom header names and ID generation are supported through CorrelationIdOptions
 
 ### 4. Structured Request Logging
 
-The library uses standard `Microsoft.Extensions.Logging` abstractions.
+The library writes one structured completion log for each request through standard `Microsoft.Extensions.Logging` abstractions.
 
-Request completion logs may contain structured fields such as:
+The default completion event includes:
 
-- HTTP method
-- Path
-- Status code
-- Duration
-- Correlation/request ID
-- Failure information
+- HTTP method and path
+- HTTP status code
+- elapsed duration measured with a monotonic clock
+- correlation/request ID
+- request host
+- failure indicator and unhandled exception type when one escapes the pipeline
+- selected request/response headers only when explicitly allowlisted
 
-Request bodies, authorization credentials, cookies, and arbitrary headers are not logged by default.
+Security defaults are intentionally restrictive:
+
+- Request bodies are never read or logged.
+- Query strings are never logged.
+- Authorization, Cookie, Proxy-Authorization, and Set-Cookie are denied by default.
+- Header logging is disabled until a header is explicitly added to an allowlist.
+- Logged metadata values are length-limited.
+
+Header allowlists and denylists can be configured when an application has a safe diagnostic need:
+
+    builder.Services.AddBackendSafety(options =>
+    {
+        options.RequestLogging.AllowedRequestHeaders.Add("X-Tenant");
+        options.RequestLogging.AllowedResponseHeaders.Add("Content-Type");
+        options.RequestLogging.MaxMetadataValueLength = 256;
+    });
+
+A denylist entry takes precedence over an allowlist entry. Remove a default denylist entry only when the application explicitly accepts the data-handling risk.
 
 ### 5. Sensitive Data Masking
 
@@ -221,45 +239,31 @@ Optional integrations should not require external infrastructure.
 
 ## Request Pipeline
 
-The initial pipeline is conceptually:
+The implemented request pipeline is:
 
-```text
-Incoming Request
-       |
-       v
-Correlation / Request ID
-       |
-       v
-Request Timing / Diagnostics
-       |
-       v
-Exception Boundary
-       |
-       v
-Application Pipeline
-       |
-       +---- exception ----> ProblemDetails
-       |
-       v
-Response Diagnostics
-       |
-       v
-Structured Logging
-       |
-       v
-Outgoing Response
-```
+    Incoming Request
+           |
+           v
+    Correlation / Request ID
+           |
+           v
+    Structured Request Logging
+           |
+           v
+    Exception Boundary
+           |
+           v
+    Application Pipeline
+           |
+           +---- exception ----> ProblemDetails
+           |
+           v
+    Completion Log
+           |
+           v
+    Outgoing Response
 
-Each middleware should have one clear responsibility.
-
-Exact middleware ordering may evolve during implementation, but these invariants must remain true:
-
-- Correlation information is available to downstream components.
-- Exceptions are handled centrally.
-- Error responses are safe.
-- Timing works for successful and failed requests.
-- Completion logging is consistent.
-- Sensitive values are removed before they reach logs.
+The request logging middleware wraps the exception boundary so handled failures are logged with their final HTTP status code.
 
 ## Architecture
 
