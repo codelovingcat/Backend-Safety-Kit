@@ -29,6 +29,11 @@ public static class BackendSafetyApplicationBuilderExtensions
             app.UseMiddleware<CorrelationIdMiddleware>();
         }
 
+        if (features.EnableDistributedTracing)
+        {
+            app.UseMiddleware<DistributedTracingMiddleware>();
+        }
+
         if (features.EnableRequestLogging)
         {
             app.UseMiddleware<StructuredRequestLoggingMiddleware>();
