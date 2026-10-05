@@ -23,6 +23,7 @@ public sealed class BackendSafetyMetricsTests
         {
             if (instrument.Meter.Name == BackendSafetyMetrics.MeterName)
             {
+                publishedInstruments.Add(instrument.Name);
                 meterListener.EnableMeasurementEvents(instrument);
             }
         };
