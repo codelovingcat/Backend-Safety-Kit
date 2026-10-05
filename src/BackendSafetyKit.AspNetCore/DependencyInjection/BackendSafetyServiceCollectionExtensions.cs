@@ -1,4 +1,5 @@
 using BackendSafetyKit;
+using BackendSafetyKit.AspNetCore.Correlation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendSafetyKit.AspNetCore.DependencyInjection;
@@ -26,6 +27,10 @@ public static class BackendSafetyServiceCollectionExtensions
         {
             options.Configure(configure);
         }
+
+        services.AddScoped<CorrelationIdAccessor>();
+        services.AddScoped<ICorrelationIdAccessor>(
+            serviceProvider => serviceProvider.GetRequiredService<CorrelationIdAccessor>());
 
         return services;
     }

@@ -22,7 +22,7 @@ public sealed class ProblemDetailsMiddlewareTests
             _ => throw new InvalidOperationException("super-secret-exception-message"));
 
         var context = CreateContext();
-        context.TraceIdentifier = "trace-123";
+        context.Request.Headers["X-Correlation-ID"] = "trace-123";
 
         await app(context);
 
