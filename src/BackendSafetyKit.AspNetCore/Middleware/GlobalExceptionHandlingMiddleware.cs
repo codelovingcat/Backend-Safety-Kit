@@ -11,8 +11,8 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
     RequestDelegate next,
     IOptions<BackendSafetyOptions> options,
     IProblemDetailsService problemDetailsService,
-    IHostEnvironment environment,
-    ILogger<GlobalExceptionHandlingMiddleware> logger)
+    ILogger<GlobalExceptionHandlingMiddleware> logger,
+    IHostEnvironment? environment = null)
 {
     public async Task InvokeAsync(HttpContext context)
     {
@@ -53,7 +53,7 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
                 Title = backendOptions.ProblemDetails.GetTitle(exception)
                     ?? GetDefaultTitle(statusCode),
                 Detail = backendOptions.ProblemDetails.IncludeExceptionDetailInDevelopment &&
-                    environment.IsDevelopment()
+                    environment?.IsDevelopment() == true
                     ? exception.Message
                     : null,
                 Instance = backendOptions.ProblemDetails.IncludeInstance
