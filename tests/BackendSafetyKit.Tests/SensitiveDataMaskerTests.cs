@@ -145,16 +145,28 @@ public sealed class SensitiveDataMaskerTests
 
         Assert.NotNull(cacheField);
 
-        var cache = Assert.IsAssignableFrom<System.Collections.IDictionary>(
-            cacheField.GetValue(null));
+        var cache = cacheField.GetValue(null);
 
-        var initialCount = cache.Count;
+        Assert.NotNull(cache);
+
+        var cacheType = cache.GetType();
+        var countProperty = cacheType.GetProperty("Count");
+        var containsKeyMethod = cacheType.GetMethod("ContainsKey");
+
+        Assert.NotNull(countProperty);
+        Assert.NotNull(containsKeyMethod);
+
+        var initialCount = Assert.IsType<int>(countProperty!.GetValue(cache));
 
         masker.Mask(source);
         masker.Mask(source);
 
-        Assert.Equal(initialCount + 1, cache.Count);
-        Assert.Contains(typeof(CacheProbe), cache.Keys);
+        var finalCount = Assert.IsType<int>(countProperty.GetValue(cache));
+        var containsProbe = Assert.IsType<bool>(
+            containsKeyMethod!.Invoke(cache, [typeof(CacheProbe)]));
+
+        Assert.Equal(initialCount + 1, finalCount);
+        Assert.True(containsProbe);
     }
 
     [Fact]
