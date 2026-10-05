@@ -167,15 +167,42 @@ Custom header names and ID generation are supported through CorrelationIdOptions
 
 The library writes one structured completion log for each request through standard `Microsoft.Extensions.Logging` abstractions.
 
-The default completion event includes:
+The completion event schema is stable:
+
+| Event | Event ID | Meaning |
+|---|---:|---|
+| `BackendSafetyKit.HttpRequest.Completed` | 2001 | Successful request completion |
+| `BackendSafetyKit.HttpRequest.ClientError` | 2002 | HTTP 400-499 completion |
+| `BackendSafetyKit.HttpRequest.ServerError` | 2003 | HTTP 500+ completion or an unhandled exception |
+
+All completion events expose the same structured fields:
 
 - HTTP method and path
 - HTTP status code
-- elapsed duration measured with a monotonic clock
+- elapsed duration
 - correlation/request ID
-- request host
-- failure indicator and unhandled exception type when one escapes the pipeline
-- selected request/response headers only when explicitly allowlisted
+- request host when enabled
+- failure indicator
+- unhandled exception type when one escapes the pipeline
+- explicitly allowlisted request/response headers
+
+Completion log severity is configurable per response class. The secure defaults remain information, warning, and error:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.RequestLogging.SuccessfulRequestLogLevel =
+        RequestLoggingLogLevel.Information;
+
+    options.RequestLogging.ClientErrorLogLevel =
+        RequestLoggingLogLevel.Warning;
+
+    options.RequestLogging.ServerErrorLogLevel =
+        RequestLoggingLogLevel.Error;
+});
+```
+
+Set any category to `RequestLoggingLogLevel.None` to disable only that category. The event IDs and event names remain stable so log consumers can filter by schema rather than message text.
 
 Security defaults are intentionally restrictive:
 
