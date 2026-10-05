@@ -36,7 +36,10 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
             return null;
         }
 
-        return FindRule(fieldName)?.Apply(value, options) ?? value;
+        var rule = FindRule(fieldName);
+        return rule is null
+            ? value
+            : ApplyRule(value, rule);
     }
 
     private object? MaskCore(
