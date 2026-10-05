@@ -132,9 +132,6 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
 #pragma warning disable CS0618
     private sealed class StartedResponseFeature(Stream body) : IHttpResponseFeature
     {
-        private readonly bool _hasStarted = true;
-        private readonly bool _hasCompleted = false;
-
         public int StatusCode { get; set; } = StatusCodes.Status200OK;
 
         public string? ReasonPhrase { get; set; }
@@ -144,9 +141,11 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
 
         public Stream Body { get; set; } = body;
 
-        public bool HasStarted => _hasStarted;
+        public bool HasStarted => true;
 
-        public bool HasCompleted => _hasCompleted;
+#pragma warning disable CA1822
+        public bool HasCompleted => false;
+#pragma warning restore CA1822
 
         public void OnStarting(Func<object, Task> callback, object state)
         {
