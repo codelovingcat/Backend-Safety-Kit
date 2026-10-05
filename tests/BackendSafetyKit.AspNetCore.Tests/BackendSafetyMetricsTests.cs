@@ -28,9 +28,9 @@ public sealed class BackendSafetyMetricsTests
         };
 
         listener.SetMeasurementEventCallback<long>(
-            (instrument, measurement, _) =>
+            (instrument, measurement, tags, _) =>
             {
-                if (!HasStatusCode(measurement, 599))
+                if (!HasStatusCode(tags, 599))
                 {
                     return;
                 }
@@ -53,11 +53,11 @@ public sealed class BackendSafetyMetricsTests
             });
 
         listener.SetMeasurementEventCallback<double>(
-            (instrument, measurement, _) =>
+            (instrument, measurement, tags, _) =>
             {
                 if (instrument.Name ==
                         "backend_safety_kit.http.server.request.duration" &&
-                    HasStatusCode(measurement, 599))
+                    HasStatusCode(tags, 599))
                 {
                     durationSeconds = measurement.Value;
                 }
@@ -104,12 +104,11 @@ public sealed class BackendSafetyMetricsTests
         Assert.Equal("BackendSafetyKit", BackendSafetyMetrics.Meter.Name);
     }
 
-    private static bool HasStatusCode<T>(
-        in Measurement<T> measurement,
+    private static bool HasStatusCode(
+        ReadOnlySpan<KeyValuePair<string, object?>> tags,
         int expectedStatusCode)
-        where T : struct
     {
-        foreach (var tag in measurement.Tags)
+        foreach (var tag in tags)
         {
             if (tag.Key == "http.response.status_code" &&
                 tag.Value is int statusCode)
