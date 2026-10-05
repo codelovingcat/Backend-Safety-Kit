@@ -115,6 +115,7 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
             case LogLevel.Warning:
                 LogCompletionWarning(
                     logger,
+                    level,
                     context.Request.Method,
                     context.Request.Path.Value ?? "/",
                     statusCode,
@@ -130,6 +131,7 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
             default:
                 LogCompletionInformation(
                     logger,
+                    level,
                     context.Request.Method,
                     context.Request.Path.Value ?? "/",
                     statusCode,
