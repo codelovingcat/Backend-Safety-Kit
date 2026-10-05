@@ -348,6 +348,30 @@ builder.Services.AddBackendSafetyHealthChecks(
 
 The package does not create authentication, authorization, CORS, or external dependency health checks. Applications can compose the package check with their own checks using the standard `AddHealthChecks` and `MapHealthChecks` APIs.
 
+## End-to-End Example
+
+The repository includes a runnable sample API and an ASP.NET Core integration test suite.
+
+Run the sample locally:
+
+```bash
+dotnet run --project samples/BackendSafetyKit.SampleApi
+```
+
+The minimal application setup is:
+
+```csharp
+builder.Services.AddBackendSafety();
+builder.Services.AddBackendSafetyHealthChecks();
+
+var app = builder.Build();
+
+app.UseBackendSafety();
+app.MapHealthChecks("/health");
+```
+
+The integration tests boot the sample with `WebApplicationFactory` and exercise the HTTP pipeline without external infrastructure.
+
 ## Request Pipeline
 
 The implemented request pipeline is:
