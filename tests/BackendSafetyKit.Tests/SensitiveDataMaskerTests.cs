@@ -85,6 +85,51 @@ public sealed class SensitiveDataMaskerTests
     }
 
     [Fact]
+    public void SingletonMaskerUsesStartupSnapshotAfterOptionsAreMutated()
+    {
+        var options = new SensitiveDataMaskingOptions();
+        options.AddRule(
+            "sessionToken",
+            SensitiveDataMatchMode.Exact,
+            SensitiveDataMaskMode.Partial,
+            visiblePrefixLength: 2,
+            visibleSuffixLength: 2);
+
+        var masker = new SensitiveDataMasker(options);
+
+        options.AllowPartialMasking = true;
+        options.MaskValue = "[CHANGED]";
+        options.Rules[^1].Name = "different";
+
+        Assert.Equal(
+            "[REDACTED]",
+            masker.MaskString("secret-token", "sessionToken"));
+    }
+
+    [Fact]
+    public void SingletonMaskerCanBeUsedConcurrently()
+    {
+        var masker = new SensitiveDataMasker(
+            new SensitiveDataMaskingOptions());
+
+        var results = new string[128];
+
+        Parallel.For(
+            0,
+            results.Length,
+            index =>
+            {
+                results[index] =
+                    masker.MaskString(
+                        $"secret-{index}",
+                        "password")
+                    ?? string.Empty;
+            });
+
+        Assert.All(results, result => Assert.Equal("[REDACTED]", result));
+    }
+
+    [Fact]
     public void NestedDictionariesAndArraysAreMaskedWithoutMutation()
     {
         var options = new SensitiveDataMaskingOptions();
