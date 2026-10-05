@@ -1,14 +1,17 @@
 using BackendSafetyKit;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
 
 namespace BackendSafetyKit.AspNetCore.Middleware;
 
 internal sealed partial class GlobalExceptionHandlingMiddleware(
     RequestDelegate next,
     IOptions<BackendSafetyOptions> options,
+    IProblemDetailsService problemDetailsService,
+    IHostEnvironment environment,
     ILogger<GlobalExceptionHandlingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
@@ -21,10 +24,11 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
         }
         catch (Exception exception)
         {
-            var exceptionOptions = options.Value.ExceptionHandling;
-            exceptionOptions.Validate();
+            var backendOptions = options.Value;
+            backendOptions.ExceptionHandling.Validate();
+            backendOptions.ProblemDetails.Validate();
 
-            var statusCode = exceptionOptions.GetStatusCode(exception);
+            var statusCode = backendOptions.ExceptionHandling.GetStatusCode(exception);
 
             LogUnhandledException(
                 logger,
@@ -38,25 +42,68 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
                 throw;
             }
 
-            context.Response.Clear();
-            context.Response.StatusCode = statusCode;
-            context.Response.ContentType = "application/json; charset=utf-8";
-
-            var payload = new SafeExceptionResponse
+            var customization = new ProblemDetailsCustomizationContext
             {
-                Title = statusCode >= 500
-                    ? "An unexpected error occurred."
-                    : "An error occurred while processing the request.",
-                Status = statusCode,
-                TraceId = context.TraceIdentifier
+                Exception = exception,
+                StatusCode = statusCode,
+                RequestMethod = context.Request.Method,
+                RequestPath = context.Request.Path.ToString(),
+                TraceId = context.TraceIdentifier,
+                Type = backendOptions.ProblemDetails.DefaultType,
+                Title = backendOptions.ProblemDetails.GetTitle(exception)
+                    ?? GetDefaultTitle(statusCode),
+                Detail = backendOptions.ProblemDetails.IncludeExceptionDetailInDevelopment &&
+                    environment.IsDevelopment()
+                    ? exception.Message
+                    : null,
+                Instance = backendOptions.ProblemDetails.IncludeInstance
+                    ? context.Request.Path.ToString()
+                    : null,
+                ErrorCode = backendOptions.ProblemDetails.GetErrorCode(exception)
             };
 
-            await JsonSerializer.SerializeAsync(
-                context.Response.Body,
-                payload,
-                cancellationToken: context.RequestAborted);
+            backendOptions.ProblemDetails.Customize?.Invoke(customization);
+
+            var problemDetails = new ProblemDetails
+            {
+                Type = customization.Type,
+                Title = customization.Title,
+                Status = customization.StatusCode,
+                Detail = customization.Detail,
+                Instance = customization.Instance
+            };
+
+            if (backendOptions.ProblemDetails.IncludeTraceId)
+            {
+                problemDetails.Extensions["traceId"] = customization.TraceId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(customization.ErrorCode))
+            {
+                problemDetails.Extensions["code"] = customization.ErrorCode;
+            }
+
+            foreach (var extension in customization.Extensions)
+            {
+                problemDetails.Extensions[extension.Key] = extension.Value;
+            }
+
+            context.Response.Clear();
+            context.Response.StatusCode = statusCode;
+
+            await problemDetailsService.WriteAsync(
+                new ProblemDetailsContext
+                {
+                    HttpContext = context,
+                    ProblemDetails = problemDetails
+                });
         }
     }
+
+    private static string GetDefaultTitle(int statusCode) =>
+        statusCode >= 500
+            ? "An unexpected error occurred."
+            : "An error occurred while processing the request.";
 
     [LoggerMessage(
         EventId = 1000,
@@ -68,13 +115,4 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
         string requestMethod,
         string requestPath,
         int statusCode);
-
-    private sealed class SafeExceptionResponse
-    {
-        public required string Title { get; init; }
-
-        public int Status { get; init; }
-
-        public required string TraceId { get; init; }
-    }
 }
