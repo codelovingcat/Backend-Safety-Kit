@@ -11,6 +11,12 @@ namespace BackendSafetyKit.AspNetCore.Tests;
 
 public sealed class CorrelationIdMiddlewareTests
 {
+    private static readonly Action<ILogger> DownstreamLog =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(2000, "DownstreamRequest"),
+            "downstream request log");
+
     [Fact]
     public async Task ValidCorrelationIdIsPropagatedToAccessorTraceAndResponseHeader()
     {
@@ -237,7 +243,7 @@ public sealed class CorrelationIdMiddlewareTests
             _ =>
             {
                 var logger = _.RequestServices.GetRequiredService<ILogger<CorrelationIdMiddlewareTests>>();
-                logger.LogInformation("downstream request log");
+                DownstreamLog(logger);
                 return Task.CompletedTask;
             });
 
@@ -292,12 +298,7 @@ public sealed class CorrelationIdMiddlewareTests
 
     private sealed class RecordingLoggerProvider : ILoggerProvider
     {
-        private readonly RecordingLogger _logger;
-
-        public RecordingLoggerProvider()
-        {
-            _logger = new RecordingLogger(this);
-        }
+        private readonly RecordingLogger _logger = new();
 
         public string? CorrelationIdFromScope => _logger.CorrelationIdFromScope;
 
@@ -308,7 +309,7 @@ public sealed class CorrelationIdMiddlewareTests
         }
     }
 
-    private sealed class RecordingLogger(RecordingLoggerProvider provider) : ILogger
+    private sealed class RecordingLogger : ILogger
     {
         public string? CorrelationIdFromScope { get; private set; }
 
