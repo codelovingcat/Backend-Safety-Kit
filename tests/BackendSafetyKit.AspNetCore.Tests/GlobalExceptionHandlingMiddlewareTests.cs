@@ -133,7 +133,7 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
     private sealed class StartedResponseFeature(Stream body) : IHttpResponseFeature
     {
         private readonly bool _hasStarted = true;
-        private readonly bool _hasCompleted;
+        private readonly bool _hasCompleted = false;
 
         public int StatusCode { get; set; } = StatusCodes.Status200OK;
 
