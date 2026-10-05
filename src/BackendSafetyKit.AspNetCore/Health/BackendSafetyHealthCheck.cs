@@ -29,7 +29,7 @@ internal sealed partial class BackendSafetyHealthCheck(
             backendOptions.RequestTiming.Validate();
             backendOptions.HttpSecurity.Validate();
 
-            var data = new Dictionary<string, object?>
+            var data = new Dictionary<string, object>
             {
                 ["configuration"] = "valid",
                 ["features"] = new[]
