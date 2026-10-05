@@ -41,6 +41,8 @@ app.UseBackendSafety();
 
 The package should work safely with minimal configuration. Advanced applications can configure individual features when needed.
 
+Configuration is validated during application startup. Invalid Backend Safety options fail through ASP.NET Core hosting startup validation instead of being silently accepted. The same validation is also used by the built-in health check, which reports an unhealthy state without exposing configuration values.
+
 ## Initial Feature Set
 
 ### 1. Global Exception Handling
