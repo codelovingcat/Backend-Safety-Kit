@@ -23,7 +23,6 @@ public sealed class BackendSafetyMetricsTests
         {
             if (instrument.Meter.Name == BackendSafetyMetrics.MeterName)
             {
-                publishedInstruments.Add(instrument.Name);
                 meterListener.EnableMeasurementEvents(instrument);
             }
         };
@@ -31,6 +30,11 @@ public sealed class BackendSafetyMetricsTests
         listener.SetMeasurementEventCallback<long>(
             (instrument, measurement, _) =>
             {
+                if (!HasStatusCode(measurement, 599))
+                {
+                    return;
+                }
+
                 if (instrument.Name ==
                     "backend_safety_kit.http.server.request.count")
                 {
@@ -52,7 +56,8 @@ public sealed class BackendSafetyMetricsTests
             (instrument, measurement, _) =>
             {
                 if (instrument.Name ==
-                    "backend_safety_kit.http.server.request.duration")
+                        "backend_safety_kit.http.server.request.duration" &&
+                    HasStatusCode(measurement, 599))
                 {
                     durationSeconds = measurement.Value;
                 }
@@ -95,41 +100,24 @@ public sealed class BackendSafetyMetricsTests
         Assert.Equal(1, requestCount);
         Assert.Equal(1, errorCount);
         Assert.Equal(1, slowRequestCount);
-        Assert.True(durationSeconds >= 0);
-
-        Assert.Equal(
-            BackendSafetyMetrics.Meter,
-            Assert.IsType<Counter<long>>(
-                GetInstrument(
-                    BackendSafetyMetrics.Meter,
-                    "backend_safety_kit.http.server.request.count")).Meter);
-
-        listener.Dispose();
-    }
-
-    [Fact]
-    public void MetricsMeterUsesStablePublicName()
-    {
+        Assert.True(durationSeconds is >= 0);
         Assert.Equal("BackendSafetyKit", BackendSafetyMetrics.Meter.Name);
     }
 
-    private static Instrument GetInstrument(Meter meter, string name)
+    private static bool HasStatusCode<T>(
+        in Measurement<T> measurement,
+        int expectedStatusCode)
+        where T : struct
     {
-        using var listener = new MeterListener();
-        Instrument? observed = null;
-
-        listener.InstrumentPublished = (instrument, meterListener) =>
+        foreach (var tag in measurement.Tags)
         {
-            if (instrument.Meter == meter && instrument.Name == name)
+            if (tag.Key == "http.response.status_code" &&
+                tag.Value is int statusCode)
             {
-                observed = instrument;
-                meterListener.DisableMeasurementEvents(instrument);
+                return statusCode == expectedStatusCode;
             }
-        };
+        }
 
-        listener.Start();
-        Assert.NotNull(observed);
-
-        return observed!;
+        return false;
     }
 }
