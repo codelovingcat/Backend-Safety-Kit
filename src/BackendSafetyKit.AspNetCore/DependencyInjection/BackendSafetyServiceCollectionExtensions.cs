@@ -27,6 +27,8 @@ public static class BackendSafetyServiceCollectionExtensions
             options.Configure(configure);
         }
 
+        services.AddProblemDetails();
+
         return services;
     }
 }
