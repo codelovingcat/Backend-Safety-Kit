@@ -51,29 +51,35 @@ public sealed class CorrelationIdOptions
         }
 
         ArgumentNullException.ThrowIfNull(Generator);
-
-        var generated = Generator();
-
-        if (string.IsNullOrWhiteSpace(generated) || generated.Length > MaxLength)
-        {
-            throw new ArgumentException(
-                "The configured correlation ID generator must return a non-empty identifier within the configured maximum length.",
-                nameof(Generator));
-        }
     }
 
     private static void ValidateHeaderName(string headerName, string parameterName)
     {
-        if (string.IsNullOrWhiteSpace(headerName))
-        {
-            throw new ArgumentException("A header name is required.", parameterName);
-        }
-
-        if (headerName.Length > 256 || headerName.Any(char.IsWhiteSpace))
+        if (string.IsNullOrWhiteSpace(headerName) || headerName.Length > 256)
         {
             throw new ArgumentException(
-                "The header name must be non-empty, contain no whitespace, and be at most 256 characters.",
+                "The header name must be non-empty and at most 256 characters.",
+                parameterName);
+        }
+
+        foreach (var character in headerName)
+        {
+            if (IsTokenCharacter(character))
+            {
+                continue;
+            }
+
+            throw new ArgumentException(
+                "The header name contains an invalid character.",
                 parameterName);
         }
     }
+
+    private static bool IsTokenCharacter(char character) =>
+        character is
+            >= 'a' and <= 'z' or
+            >= 'A' and <= 'Z' or
+            >= '0' and <= '9' or
+            '!' or '#' or '$' or '%' or '&' or '\'' or '*' or '+' or '-' or
+            '.' or '^' or '_' or '`' or '|' or '~';
 }
