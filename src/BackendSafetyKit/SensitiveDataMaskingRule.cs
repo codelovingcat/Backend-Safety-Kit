@@ -11,6 +11,7 @@ public sealed class SensitiveDataMaskingRule
     /// <param name="name">The field name or pattern to match.</param>
     public SensitiveDataMaskingRule(string name)
     {
+        ArgumentNullException.ThrowIfNull(name);
         Name = name;
     }
 
