@@ -29,4 +29,9 @@ public sealed class BackendSafetyOptions
     /// Gets the configuration for sensitive data masking and redaction.
     /// </summary>
     public SensitiveDataMaskingOptions SensitiveDataMasking { get; } = new();
+
+    /// <summary>
+    /// Gets the configuration for request timing and slow-request diagnostics.
+    /// </summary>
+    public RequestTimingOptions RequestTiming { get; } = new();
 }
