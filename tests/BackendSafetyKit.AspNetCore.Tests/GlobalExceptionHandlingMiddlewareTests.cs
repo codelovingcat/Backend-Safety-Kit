@@ -34,7 +34,7 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
         Assert.DoesNotContain("super-secret-exception-message", response);
         Assert.DoesNotContain("InvalidOperationException", response);
         Assert.Contains("An unexpected error occurred.", response);
-        Assert.Equal(1, loggerProvider.ErrorCount);
+        Assert.Equal(2, loggerProvider.ErrorCount);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
             () => app(context));
 
         Assert.Equal("after-response-start", exception.Message);
-        Assert.Equal(1, loggerProvider.ErrorCount);
+        Assert.Equal(2, loggerProvider.ErrorCount);
     }
 
     private static RequestDelegate BuildPipeline(

@@ -19,4 +19,9 @@ public sealed class BackendSafetyOptions
     /// Gets the configuration for standardized ProblemDetails responses.
     /// </summary>
     public ProblemDetailsOptions ProblemDetails { get; } = new();
+
+    /// <summary>
+    /// Gets the configuration for structured HTTP request completion logging.
+    /// </summary>
+    public RequestLoggingOptions RequestLogging { get; } = new();
 }

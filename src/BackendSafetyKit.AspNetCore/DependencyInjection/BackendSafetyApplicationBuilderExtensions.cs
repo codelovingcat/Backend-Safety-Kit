@@ -18,6 +18,7 @@ public static class BackendSafetyApplicationBuilderExtensions
         ArgumentNullException.ThrowIfNull(app);
 
         app.UseMiddleware<CorrelationIdMiddleware>();
+        app.UseMiddleware<StructuredRequestLoggingMiddleware>();
         app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
         return app;
