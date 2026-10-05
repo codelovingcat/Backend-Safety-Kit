@@ -22,7 +22,11 @@ public static class BackendSafetyServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        var options = services.AddOptions<BackendSafetyOptions>();
+        var options = services.AddOptions<BackendSafetyOptions>()
+            .Validate(
+                ValidateBackendSafetyOptions,
+                "Backend Safety Kit configuration is invalid.")
+            .ValidateOnStart();
 
         if (configure is not null)
         {
@@ -39,5 +43,18 @@ public static class BackendSafetyServiceCollectionExtensions
                     .SensitiveDataMasking));
 
         return services;
+    }
+
+    private static bool ValidateBackendSafetyOptions(BackendSafetyOptions options)
+    {
+        options.ExceptionHandling.Validate();
+        options.Correlation.Validate();
+        options.ProblemDetails.Validate();
+        options.RequestLogging.Validate();
+        options.SensitiveDataMasking.Validate();
+        options.RequestTiming.Validate();
+        options.HttpSecurity.Validate();
+
+        return true;
     }
 }
