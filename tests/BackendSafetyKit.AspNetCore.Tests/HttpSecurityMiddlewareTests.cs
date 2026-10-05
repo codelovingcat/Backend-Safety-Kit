@@ -154,19 +154,18 @@ public sealed class HttpSecurityMiddlewareTests
     }
 
     [Fact]
-    public async Task InvalidRequestBodySizeConfigurationFailsFast()
+    public void InvalidRequestBodySizeConfigurationFailsFast()
     {
         var services = CreateServices(options =>
             options.HttpSecurity.MaxRequestBodySize = 0);
 
-        var app = BuildPipeline(
-            services,
-            context => Task.CompletedTask);
+        var exception = Assert.Throws<OptionsValidationException>(
+            () => BuildPipeline(
+                services,
+                context => Task.CompletedTask));
 
-        var context = CreateContext();
-
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => app(context));
+        Assert.Contains("HttpSecurity", exception.Message);
+        Assert.Contains("maximum request body size", exception.Message);
     }
 
     [Fact]
