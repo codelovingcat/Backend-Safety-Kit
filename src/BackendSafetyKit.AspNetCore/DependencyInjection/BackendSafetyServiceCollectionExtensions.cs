@@ -28,7 +28,9 @@ public static class BackendSafetyServiceCollectionExtensions
             options.Configure(configure);
         }
 
-        services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
+        services.AddScoped<CorrelationIdAccessor>();
+        services.AddScoped<ICorrelationIdAccessor>(
+            serviceProvider => serviceProvider.GetRequiredService<CorrelationIdAccessor>());
 
         return services;
     }
