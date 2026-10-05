@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json;
 using BackendSafetyKit;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -193,11 +192,14 @@ public sealed class SampleApiIntegrationTests
         protected override void ConfigureWebHost(
             Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
         {
-            builder.ConfigureLogging(logging =>
+            builder.ConfigureServices(services =>
             {
-                logging.ClearProviders();
-                logging.SetMinimumLevel(LogLevel.Information);
-                logging.AddProvider(loggerProvider);
+                services.AddLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.SetMinimumLevel(LogLevel.Information);
+                    logging.AddProvider(loggerProvider);
+                });
             });
         }
 
