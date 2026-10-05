@@ -48,13 +48,14 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
         Exception? unhandledException)
     {
         var statusCode = context.Response.StatusCode;
-        var level = unhandledException is not null || statusCode >= 500
-            ? LogLevel.Error
-            : statusCode >= 400
-                ? LogLevel.Warning
-                : LogLevel.Information;
+        var level = ToLogLevel(
+            unhandledException is not null || statusCode >= 500
+                ? options.ServerErrorLogLevel
+                : statusCode >= 400
+                    ? options.ClientErrorLogLevel
+                    : options.SuccessfulRequestLogLevel);
 
-        if (!logger.IsEnabled(level))
+        if (level == LogLevel.None || !logger.IsEnabled(level))
         {
             return;
         }
@@ -98,6 +99,7 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
             case LogLevel.Error:
                 LogCompletionError(
                     logger,
+                    level,
                     context.Request.Method,
                     context.Request.Path.Value ?? "/",
                     statusCode,
@@ -141,6 +143,18 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
                 break;
         }
     }
+
+    private static LogLevel ToLogLevel(RequestLoggingLogLevel logLevel) =>
+        logLevel switch
+        {
+            RequestLoggingLogLevel.Trace => LogLevel.Trace,
+            RequestLoggingLogLevel.Debug => LogLevel.Debug,
+            RequestLoggingLogLevel.Information => LogLevel.Information,
+            RequestLoggingLogLevel.Warning => LogLevel.Warning,
+            RequestLoggingLogLevel.Error => LogLevel.Error,
+            RequestLoggingLogLevel.Critical => LogLevel.Critical,
+            _ => LogLevel.None
+        };
 
     private static Dictionary<string, string>? CaptureHeaders(
         IHeaderDictionary headers,
@@ -261,10 +275,11 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
 
     [LoggerMessage(
         EventId = 2001,
-        Level = LogLevel.Information,
+        Name = "BackendSafetyKit.HttpRequest.Completed",
         Message = "HTTP {HttpMethod} {RequestPath} completed with status {StatusCode} in {DurationMs} ms. CorrelationId={CorrelationId}; Host={Host}; IsFailure={IsFailure}; FailureType={FailureType}; RequestHeaders={RequestHeaders}; ResponseHeaders={ResponseHeaders}.")]
     private static partial void LogCompletionInformation(
         ILogger logger,
+        LogLevel level,
         string httpMethod,
         string requestPath,
         int statusCode,
@@ -278,10 +293,11 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
 
     [LoggerMessage(
         EventId = 2002,
-        Level = LogLevel.Warning,
+        Name = "BackendSafetyKit.HttpRequest.ClientError",
         Message = "HTTP {HttpMethod} {RequestPath} completed with status {StatusCode} in {DurationMs} ms. CorrelationId={CorrelationId}; Host={Host}; IsFailure={IsFailure}; FailureType={FailureType}; RequestHeaders={RequestHeaders}; ResponseHeaders={ResponseHeaders}.")]
     private static partial void LogCompletionWarning(
         ILogger logger,
+        LogLevel level,
         string httpMethod,
         string requestPath,
         int statusCode,
@@ -295,10 +311,11 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
 
     [LoggerMessage(
         EventId = 2003,
-        Level = LogLevel.Error,
+        Name = "BackendSafetyKit.HttpRequest.ServerError",
         Message = "HTTP {HttpMethod} {RequestPath} completed with status {StatusCode} in {DurationMs} ms. CorrelationId={CorrelationId}; Host={Host}; IsFailure={IsFailure}; FailureType={FailureType}; RequestHeaders={RequestHeaders}; ResponseHeaders={ResponseHeaders}.")]
     private static partial void LogCompletionError(
         ILogger logger,
+        LogLevel level,
         string httpMethod,
         string requestPath,
         int statusCode,
