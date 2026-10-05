@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace BackendSafetyKit;
@@ -8,6 +9,9 @@ namespace BackendSafetyKit;
 /// </summary>
 public sealed class SensitiveDataMasker : ISensitiveDataMasker
 {
+    private static readonly ConcurrentDictionary<Type, PropertyMetadata[]> PropertyMetadataCache =
+        new();
+
     private readonly string maskValue;
     private readonly bool allowPartialMasking;
     private readonly int maxDepth;
@@ -201,16 +205,9 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
             var result = new Dictionary<string, object?>(
                 StringComparer.OrdinalIgnoreCase);
 
-            foreach (var property in value.GetType().GetProperties(
-                         BindingFlags.Instance | BindingFlags.Public))
+            foreach (var property in GetPropertyMetadata(value.GetType()))
             {
-                if (!property.CanRead ||
-                    property.GetIndexParameters().Length != 0)
-                {
-                    continue;
-                }
-
-                var propertyValue = property.GetValue(value);
+                var propertyValue = property.Property.GetValue(value);
 
                 result[property.Name] = MaskCore(
                     propertyValue,
@@ -226,6 +223,18 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
             visited.Remove(value);
         }
     }
+
+    private static PropertyMetadata[] GetPropertyMetadata(Type type) =>
+        PropertyMetadataCache.GetOrAdd(type, static valueType =>
+            valueType
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(property =>
+                    property.CanRead &&
+                    property.GetIndexParameters().Length == 0)
+                .Select(property => new PropertyMetadata(
+                    property.Name,
+                    property))
+                .ToArray());
 
     private MaskingRuleSnapshot? FindRule(string? fieldName)
     {
@@ -316,6 +325,10 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
             };
         }
     }
+
+    private readonly record struct PropertyMetadata(
+        string Name,
+        PropertyInfo Property);
 
     private static bool IsSimpleValue(Type type) =>
         type.IsPrimitive ||
