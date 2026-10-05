@@ -11,8 +11,8 @@ namespace BackendSafetyKit.AspNetCore.Middleware;
 internal sealed partial class GlobalExceptionHandlingMiddleware(
     RequestDelegate next,
     IOptions<BackendSafetyKit.BackendSafetyOptions> options,
-    IHostEnvironment? environment,
-    ILogger<GlobalExceptionHandlingMiddleware> logger)
+    ILogger<GlobalExceptionHandlingMiddleware> logger,
+    IHostEnvironment? environment = null)
 {
     private static readonly JsonSerializerOptions ProblemDetailsJsonOptions =
         new(JsonSerializerDefaults.Web);
