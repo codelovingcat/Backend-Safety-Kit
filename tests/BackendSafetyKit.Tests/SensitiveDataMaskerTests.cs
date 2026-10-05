@@ -67,7 +67,7 @@ public sealed class SensitiveDataMaskerTests
     {
         var options = new SensitiveDataMaskingOptions();
         options.AddRule(
-            "accessToken",
+            "sessionToken",
             SensitiveDataMatchMode.Exact,
             SensitiveDataMaskMode.Partial,
             visiblePrefixLength: 2,
@@ -75,10 +75,10 @@ public sealed class SensitiveDataMaskerTests
 
         var masker = new SensitiveDataMasker(options);
 
-        Assert.Equal("[REDACTED]", masker.MaskString("secret-token", "accessToken"));
+        Assert.Equal("[REDACTED]", masker.MaskString("secret-token", "sessionToken"));
 
         options.AllowPartialMasking = true;
-        var partiallyMasked = masker.MaskString("secret-token", "accessToken");
+        var partiallyMasked = masker.MaskString("secret-token", "sessionToken");
 
         Assert.Equal("se********en", partiallyMasked);
         Assert.DoesNotContain("secret-token", partiallyMasked, StringComparison.Ordinal);
