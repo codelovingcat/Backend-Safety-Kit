@@ -189,16 +189,7 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
                     continue;
                 }
 
-                object? propertyValue;
-
-                try
-                {
-                    propertyValue = property.GetValue(value);
-                }
-                catch
-                {
-                    continue;
-                }
+                var propertyValue = property.GetValue(value);
 
                 result[property.Name] = MaskCore(
                     propertyValue,
