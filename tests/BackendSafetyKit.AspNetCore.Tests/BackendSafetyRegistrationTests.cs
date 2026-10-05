@@ -161,6 +161,19 @@ public sealed class BackendSafetyRegistrationTests
         Assert.False(context.Response.Headers.ContainsKey("X-Content-Type-Options"));
     }
 
+    private static RequestDelegate BuildPipeline(
+        IServiceCollection services,
+        RequestDelegate terminal)
+    {
+        var provider = services.BuildServiceProvider();
+        var builder = new ApplicationBuilder(provider);
+
+        builder.UseBackendSafety();
+        builder.Run(terminal);
+
+        return builder.Build();
+    }
+
     [Fact]
     public async Task UseBackendSafetyAllowsRequestToReachEndpoint()
     {
