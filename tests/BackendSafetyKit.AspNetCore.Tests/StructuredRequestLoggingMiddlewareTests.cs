@@ -32,6 +32,7 @@ public sealed class StructuredRequestLoggingMiddlewareTests
         var entry = Assert.Single(loggerProvider.Entries, x => x.EventId == 2001);
 
         Assert.Equal(LogLevel.Information, entry.LogLevel);
+        Assert.Equal("BackendSafetyKit.HttpRequest.Completed", entry.EventId.Name);
         Assert.Equal("/orders/42", entry.Properties["RequestPath"]?.ToString());
         Assert.Equal("GET", entry.Properties["HttpMethod"]?.ToString());
         Assert.Equal(200, entry.Properties["StatusCode"]);
@@ -40,6 +41,144 @@ public sealed class StructuredRequestLoggingMiddlewareTests
         Assert.Equal(false, entry.Properties["IsFailure"]);
         Assert.Null(entry.Properties["FailureType"]);
         Assert.True(Convert.ToDouble(entry.Properties["DurationMs"], System.Globalization.CultureInfo.InvariantCulture) >= 0);
+    }
+
+    [Fact]
+    public async Task CompletionLogLevelsAreConfigurablePerResponseClass()
+    {
+        var loggerProvider = new RecordingLoggerProvider();
+        var services = CreateServices(
+            loggerProvider,
+            options =>
+            {
+                options.RequestLogging.SuccessfulRequestLogLevel =
+                    RequestLoggingLogLevel.Debug;
+                options.RequestLogging.ClientErrorLogLevel =
+                    RequestLoggingLogLevel.Trace;
+                options.RequestLogging.ServerErrorLogLevel =
+                    RequestLoggingLogLevel.Critical;
+            });
+
+        await InvokeAsync(
+            BuildPipeline(
+                services,
+                context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status200OK;
+                    return Task.CompletedTask;
+                }),
+            services,
+            CreateContext());
+
+        await InvokeAsync(
+            BuildPipeline(
+                services,
+                context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+                    return Task.CompletedTask;
+                }),
+            services,
+            CreateContext());
+
+        await InvokeAsync(
+            BuildPipeline(
+                services,
+                context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                    return Task.CompletedTask;
+                }),
+            services,
+            CreateContext());
+
+        var completed = Assert.Single(
+            loggerProvider.Entries,
+            x => x.EventId == 2001);
+
+        var clientError = Assert.Single(
+            loggerProvider.Entries,
+            x => x.EventId == 2002);
+
+        var serverError = Assert.Single(
+            loggerProvider.Entries,
+            x => x.EventId == 2003);
+
+        Assert.Equal(LogLevel.Debug, completed.LogLevel);
+        Assert.Equal("BackendSafetyKit.HttpRequest.Completed", completed.EventId.Name);
+
+        Assert.Equal(LogLevel.Trace, clientError.LogLevel);
+        Assert.Equal("BackendSafetyKit.HttpRequest.ClientError", clientError.EventId.Name);
+
+        Assert.Equal(LogLevel.Critical, serverError.LogLevel);
+        Assert.Equal("BackendSafetyKit.HttpRequest.ServerError", serverError.EventId.Name);
+    }
+
+    [Fact]
+    public async Task NoneDisablesOnlyTheConfiguredCompletionEventClass()
+    {
+        var loggerProvider = new RecordingLoggerProvider();
+        var services = CreateServices(
+            loggerProvider,
+            options =>
+            {
+                options.RequestLogging.SuccessfulRequestLogLevel =
+                    RequestLoggingLogLevel.None;
+            });
+
+        await InvokeAsync(
+            BuildPipeline(
+                services,
+                context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status200OK;
+                    return Task.CompletedTask;
+                }),
+            services,
+            CreateContext());
+
+        await InvokeAsync(
+            BuildPipeline(
+                services,
+                context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    return Task.CompletedTask;
+                }),
+            services,
+            CreateContext());
+
+        Assert.DoesNotContain(
+            loggerProvider.Entries,
+            entry => entry.EventId.Id == 2001);
+
+        Assert.Contains(
+            loggerProvider.Entries,
+            entry => entry.EventId.Id == 2002);
+    }
+
+    [Fact]
+    public async Task InvalidCompletionLogLevelFailsValidation()
+    {
+        var loggerProvider = new RecordingLoggerProvider();
+        var services = CreateServices(
+            loggerProvider,
+            options =>
+            {
+                options.RequestLogging.ServerErrorLogLevel =
+                    (RequestLoggingLogLevel)99;
+            });
+
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                return Task.CompletedTask;
+            });
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => InvokeAsync(app, services, CreateContext()));
     }
 
     [Fact]
