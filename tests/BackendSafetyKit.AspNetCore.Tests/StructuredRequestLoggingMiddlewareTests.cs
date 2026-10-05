@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace BackendSafetyKit.AspNetCore.Tests;
@@ -52,9 +53,9 @@ public sealed class StructuredRequestLoggingMiddlewareTests
             options =>
             {
                 options.RequestLogging.SuccessfulRequestLogLevel =
-                    RequestLoggingLogLevel.Debug;
+                    RequestLoggingLogLevel.Warning;
                 options.RequestLogging.ClientErrorLogLevel =
-                    RequestLoggingLogLevel.Trace;
+                    RequestLoggingLogLevel.Information;
                 options.RequestLogging.ServerErrorLogLevel =
                     RequestLoggingLogLevel.Critical;
             });
@@ -104,10 +105,10 @@ public sealed class StructuredRequestLoggingMiddlewareTests
             loggerProvider.Entries,
             x => x.EventId == 2003);
 
-        Assert.Equal(LogLevel.Debug, completed.LogLevel);
+        Assert.Equal(LogLevel.Warning, completed.LogLevel);
         Assert.Equal("BackendSafetyKit.HttpRequest.Completed", completed.EventId.Name);
 
-        Assert.Equal(LogLevel.Trace, clientError.LogLevel);
+        Assert.Equal(LogLevel.Information, clientError.LogLevel);
         Assert.Equal("BackendSafetyKit.HttpRequest.ClientError", clientError.EventId.Name);
 
         Assert.Equal(LogLevel.Critical, serverError.LogLevel);
@@ -169,16 +170,14 @@ public sealed class StructuredRequestLoggingMiddlewareTests
                     (RequestLoggingLogLevel)99;
             });
 
-        var app = BuildPipeline(
-            services,
-            context =>
-            {
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                return Task.CompletedTask;
-            });
-
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => InvokeAsync(app, services, CreateContext()));
+        Assert.Throws<OptionsValidationException>(
+            () => BuildPipeline(
+                services,
+                context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    return Task.CompletedTask;
+                }));
     }
 
     [Fact]
