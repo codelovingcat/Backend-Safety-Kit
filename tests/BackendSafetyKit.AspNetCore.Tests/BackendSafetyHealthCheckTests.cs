@@ -1,4 +1,5 @@
 using BackendSafetyKit;
+using BackendSafetyKit.AspNetCore.DependencyInjection;
 using BackendSafetyKit.AspNetCore.Health;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -9,6 +10,7 @@ namespace BackendSafetyKit.AspNetCore.Tests;
 
 public sealed class BackendSafetyHealthCheckTests
 {
+    private static readonly string[] ReadyTags = ["ready"];
     [Fact]
     public async Task HealthyConfigurationReturnsHealthyStatusWithoutSensitiveValues()
     {
@@ -82,7 +84,8 @@ public sealed class BackendSafetyHealthCheckTests
         var healthCheckService = provider.GetRequiredService<HealthCheckService>();
 
         var report = await healthCheckService.CheckHealthAsync(
-            registrationName: "backend-safety-readiness");
+            predicate: registration =>
+                registration.Name == "backend-safety-readiness");
 
         var entry = Assert.Single(report.Entries);
 
@@ -94,7 +97,7 @@ public sealed class BackendSafetyHealthCheckTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddBackendSafetyHealthChecks(tags: new[] { "ready" });
+        services.AddBackendSafetyHealthChecks(tags: ReadyTags);
 
         using var provider = services.BuildServiceProvider();
         var healthCheckService = provider.GetRequiredService<HealthCheckService>();
