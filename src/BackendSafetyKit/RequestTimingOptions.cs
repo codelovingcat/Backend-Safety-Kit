@@ -46,6 +46,5 @@ public sealed class RequestTimingOptions
                 null);
         }
 
-        ArgumentNullException.ThrowIfNull(OnCompleted);
     }
 }
