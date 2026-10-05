@@ -60,7 +60,20 @@ internal sealed partial class RequestTimingMiddleware(
                 }
             }
 
+            RecordMetrics(timing);
             InvokeCompletionHook(timingOptions, timing);
+        }
+    }
+
+    private void RecordMetrics(RequestTimingContext timing)
+    {
+        try
+        {
+            BackendSafetyMetrics.RecordHttpRequest(timing);
+        }
+        catch (Exception exception)
+        {
+            LogMetricsFailure(logger, exception);
         }
     }
 
@@ -106,6 +119,14 @@ internal sealed partial class RequestTimingMiddleware(
         int statusCode,
         double durationMs,
         string correlationId);
+
+    [LoggerMessage(
+        EventId = 3003,
+        Level = LogLevel.Error,
+        Message = "The request metrics recorder failed.")]
+    private static partial void LogMetricsFailure(
+        ILogger logger,
+        Exception exception);
 
     [LoggerMessage(
         EventId = 3002,
