@@ -331,7 +331,34 @@ builder.Services.AddBackendSafety(options =>
 
 The completion callback receives only safe diagnostic metadata: method, path, status code, correlation ID, duration, and slow-request state. Request bodies and query strings are not included.
 
-### 7. Secure-by-Default HTTP Configuration
+### 7. Metrics
+
+The kit exposes a dependency-free `System.Diagnostics.Metrics.Meter` named `BackendSafetyKit`.
+
+HTTP request metrics are recorded from the existing request timing middleware:
+
+| Instrument | Type | Unit | Meaning |
+|---|---|---|---|
+| `backend_safety_kit.http.server.request.count` | Counter | `{request}` | Completed HTTP requests |
+| `backend_safety_kit.http.server.request.duration` | Histogram | `s` | Completed request duration |
+| `backend_safety_kit.http.server.request.error.count` | Counter | `{request}` | Completed requests with a 5xx status |
+| `backend_safety_kit.http.server.request.slow.count` | Counter | `{request}` | Requests at or above the configured slow threshold |
+
+Metric tags are deliberately limited to the HTTP method and response status code. Paths, query strings, correlation IDs, headers, request bodies, and other potentially high-cardinality or sensitive values are not emitted as metric tags.
+
+The core package does not export telemetry and does not require OpenTelemetry. Applications or the future optional OpenTelemetry package can subscribe to the meter:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics.AddMeter(BackendSafetyMetrics.MeterName);
+    });
+```
+
+The metrics layer does not make network calls. If a consumer's metrics listener throws while a request is being recorded, the request continues and the failure is written to the existing structured diagnostics logger.
+
+### 8. Secure-by-Default HTTP Configuration
 
 The kit applies a deliberately small set of HTTP hardening defaults through `HttpSecurityOptions`.
 
