@@ -271,19 +271,39 @@ The completion callback receives only safe diagnostic metadata: method, path, st
 
 ### 7. Secure-by-Default HTTP Configuration
 
-The library may provide carefully selected HTTP hardening defaults.
+The kit applies a deliberately small set of HTTP hardening defaults through `HttpSecurityOptions`.
 
-Each behavior must be independently configurable and documented.
+The default behavior is intentionally conservative:
 
-The package must not silently create or replace:
+- `X-Content-Type-Options: nosniff` is enabled.
+- Request body size is not changed unless `MaxRequestBodySize` is explicitly configured.
+- `X-Frame-Options`, `Referrer-Policy`, and `Content-Security-Policy` are disabled by default because they can affect legitimate browser-facing applications.
+- Existing response headers are preserved and are never overwritten by the package.
 
-- Authentication schemes
-- Authorization policies
-- CORS policies
-- Reverse-proxy trust configuration
-- Cookie authentication configuration
+Example:
 
-Security features should improve defaults without taking ownership of the application's security architecture.
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.HttpSecurity.EnableFrameOptionsHeader = true;
+    options.HttpSecurity.FrameOptions = "SAMEORIGIN";
+
+    options.HttpSecurity.EnableReferrerPolicyHeader = true;
+    options.HttpSecurity.ReferrerPolicy = "strict-origin-when-cross-origin";
+
+    options.HttpSecurity.EnableContentSecurityPolicyHeader = true;
+    options.HttpSecurity.ContentSecurityPolicy =
+        "default-src 'self'";
+
+    options.HttpSecurity.MaxRequestBodySize = 10 * 1024 * 1024;
+});
+```
+
+A configured request body limit is applied through ASP.NET Core's `IHttpMaxRequestBodySizeFeature`. If the active server does not expose that feature or the server has already made the limit read-only, configuration fails instead of silently doing nothing.
+
+The package does not automatically configure HSTS, HTTPS redirection, authentication, authorization, CORS, cookies, or reverse-proxy trust. Those behaviors depend on the host application's deployment and security architecture.
+
+Existing ProblemDetails behavior remains safe by default: exception details are not returned unless explicitly enabled for development, and development-only details are still suppressed outside the Development environment.
 
 ### 8. Health and Diagnostics
 
@@ -307,6 +327,9 @@ The implemented request pipeline is:
            |
            v
     Request Timing / Diagnostics
+           |
+           v
+    Secure HTTP Defaults
            |
            v
     Exception Boundary

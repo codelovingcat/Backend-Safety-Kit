@@ -34,4 +34,9 @@ public sealed class BackendSafetyOptions
     /// Gets the configuration for request timing and slow-request diagnostics.
     /// </summary>
     public RequestTimingOptions RequestTiming { get; } = new();
+
+    /// <summary>
+    /// Gets the configuration for secure HTTP defaults.
+    /// </summary>
+    public HttpSecurityOptions HttpSecurity { get; } = new();
 }
