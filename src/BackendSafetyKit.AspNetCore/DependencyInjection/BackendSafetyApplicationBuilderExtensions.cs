@@ -17,6 +17,6 @@ public static class BackendSafetyApplicationBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        return app.UseMiddleware<BackendSafetyMiddleware>();
+        return app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
     }
 }
