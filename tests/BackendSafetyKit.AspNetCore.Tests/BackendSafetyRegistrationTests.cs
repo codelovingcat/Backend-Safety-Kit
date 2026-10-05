@@ -26,6 +26,25 @@ public sealed class BackendSafetyRegistrationTests
     }
 
     [Fact]
+    public void AddBackendSafetyValidatesOptionsOnStartup()
+    {
+        var services = new ServiceCollection();
+
+        services.AddBackendSafety(options =>
+        {
+            options.ExceptionHandling.DefaultStatusCode = StatusCodes.Status200OK;
+        });
+
+        using var provider = services.BuildServiceProvider();
+        var startupValidator = provider.GetRequiredService<IStartupValidator>();
+
+        var exception = Assert.Throws<OptionsValidationException>(
+            startupValidator.Validate);
+
+        Assert.Contains("between 400 and 599", exception.Message);
+    }
+
+    [Fact]
     public async Task UseBackendSafetyAllowsRequestToReachEndpoint()
     {
         var services = new ServiceCollection();
