@@ -307,11 +307,46 @@ Existing ProblemDetails behavior remains safe by default: exception details are 
 
 ### 8. Health and Diagnostics
 
-Integration should remain compatible with standard ASP.NET Core diagnostics and health infrastructure.
+The kit can integrate with the standard ASP.NET Core Health Checks infrastructure without adding external services.
 
-Health endpoints must not expose secrets or internal exception details.
+Register the package diagnostic check with:
 
-Optional integrations should not require external infrastructure.
+```csharp
+builder.Services.AddBackendSafety();
+builder.Services.AddBackendSafetyHealthChecks();
+```
+
+Then expose it through the standard ASP.NET Core endpoint mapping:
+
+```csharp
+app.MapHealthChecks("/health");
+```
+
+The built-in check validates the package configuration without returning configuration values or exception details.
+
+A healthy check reports:
+
+```text
+Backend Safety Kit configuration is valid.
+```
+
+Invalid configuration reports an unhealthy result:
+
+```text
+Backend Safety Kit configuration is invalid.
+```
+
+The underlying validation exception is written to structured logging (event ID `4001`) for operators, but it is not included in the health response.
+
+Readiness or liveness filtering can use standard Health Checks tags:
+
+```csharp
+builder.Services.AddBackendSafetyHealthChecks(
+    "backend-safety-readiness",
+    "ready");
+```
+
+The package does not create authentication, authorization, CORS, or external dependency health checks. Applications can compose the package check with their own checks using the standard `AddHealthChecks` and `MapHealthChecks` APIs.
 
 ## Request Pipeline
 
