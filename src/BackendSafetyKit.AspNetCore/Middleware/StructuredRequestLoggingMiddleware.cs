@@ -92,7 +92,7 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
                 LogCompletionError(
                     logger,
                     context.Request.Method,
-                    context.Request.Path,
+                    context.Request.Path.ToString(),
                     statusCode,
                     durationMs,
                     correlationId,
@@ -107,7 +107,7 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
                 LogCompletionWarning(
                     logger,
                     context.Request.Method,
-                    context.Request.Path,
+                    context.Request.Path.ToString(),
                     statusCode,
                     durationMs,
                     correlationId,
@@ -122,7 +122,7 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
                 LogCompletionInformation(
                     logger,
                     context.Request.Method,
-                    context.Request.Path,
+                    context.Request.Path.ToString(),
                     statusCode,
                     durationMs,
                     correlationId,
