@@ -32,8 +32,9 @@ public sealed class RequestTimingMiddlewareTests
 
         await InvokeAsync(app, services, context);
 
-        var timing = Assert.NotNull(observed);
-        Assert.Equal("GET", timing!.Method);
+        Assert.NotNull(observed);
+        var timing = observed!;
+        Assert.Equal("GET", timing.Method);
         Assert.Equal("/timing", timing.Path);
         Assert.Equal(StatusCodes.Status204NoContent, timing.StatusCode);
         Assert.Equal("timing-42", timing.CorrelationId);
@@ -61,8 +62,9 @@ public sealed class RequestTimingMiddlewareTests
 
         await InvokeAsync(app, services, CreateContext());
 
-        var timing = Assert.NotNull(observed);
-        Assert.True(timing!.IsSlow);
+        Assert.NotNull(observed);
+        var timing = observed!;
+        Assert.True(timing.IsSlow);
         Assert.True(timing.Duration >= TimeSpan.Zero);
     }
 
