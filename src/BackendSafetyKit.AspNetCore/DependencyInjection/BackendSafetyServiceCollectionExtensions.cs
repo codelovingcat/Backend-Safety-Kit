@@ -1,6 +1,7 @@
 using BackendSafetyKit;
 using BackendSafetyKit.AspNetCore.Correlation;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace BackendSafetyKit.AspNetCore.DependencyInjection;
 
@@ -31,6 +32,11 @@ public static class BackendSafetyServiceCollectionExtensions
         services.AddScoped<CorrelationIdAccessor>();
         services.AddScoped<ICorrelationIdAccessor>(
             serviceProvider => serviceProvider.GetRequiredService<CorrelationIdAccessor>());
+
+        services.AddSingleton<ISensitiveDataMasker>(
+            serviceProvider => new SensitiveDataMasker(
+                serviceProvider.GetRequiredService<IOptions<BackendSafetyOptions>>().Value
+                    .SensitiveDataMasking));
 
         return services;
     }
