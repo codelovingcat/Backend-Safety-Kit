@@ -54,7 +54,7 @@ internal sealed class BackendSafetyOptionsValidator : IValidateOptions<BackendSa
     }
 
     private static void ValidateSection(
-        ICollection<string> failures,
+        List<string> failures,
         string sectionName,
         Action validate)
     {
