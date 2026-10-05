@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendSafetyKit.AspNetCore.DependencyInjection;
 
+/// <summary>
+/// Provides extension methods for registering Backend Safety Kit services.
+/// </summary>
 public static class BackendSafetyServiceCollectionExtensions
 {
     /// <summary>
