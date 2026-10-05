@@ -12,6 +12,7 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
     RequestDelegate next,
     IOptions<BackendSafetyKit.BackendSafetyOptions> options,
     ILogger<GlobalExceptionHandlingMiddleware> logger,
+    IProblemDetailsService problemDetailsService,
     IHostEnvironment? environment = null)
 {
     private static readonly JsonSerializerOptions ProblemDetailsJsonOptions =
@@ -95,6 +96,19 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
 
             context.Response.Clear();
             context.Response.StatusCode = statusCode;
+
+            if (await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+            {
+                HttpContext = context,
+                ProblemDetails = problemDetails,
+                Exception = exception
+            }))
+            {
+                return;
+            }
+
+            // Preserve the package's existing JSON behavior when the native
+            // ProblemDetails writers reject the request's media type.
             context.Response.ContentType = "application/problem+json; charset=utf-8";
 
             await JsonSerializer.SerializeAsync(
