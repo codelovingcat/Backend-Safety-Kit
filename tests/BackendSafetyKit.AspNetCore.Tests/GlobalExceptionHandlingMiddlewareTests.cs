@@ -128,6 +128,7 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
         return await reader.ReadToEndAsync();
     }
 
+#pragma warning disable CS0618
     private sealed class StartedResponseFeature(Stream body) : IHttpResponseFeature
     {
         public int StatusCode { get; set; } = StatusCodes.Status200OK;
@@ -151,6 +152,7 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
         {
         }
     }
+#pragma warning restore CS0618
 
     private sealed class RecordingLoggerProvider : ILoggerProvider
     {
