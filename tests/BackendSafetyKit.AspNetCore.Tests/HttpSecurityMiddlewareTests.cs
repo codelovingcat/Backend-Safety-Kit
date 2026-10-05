@@ -169,7 +169,7 @@ public sealed class HttpSecurityMiddlewareTests
     }
 
     [Fact]
-    public async Task InvalidCustomSecurityHeaderValuesFailValidation()
+    public void InvalidCustomSecurityHeaderValuesFailValidation()
     {
         var services = CreateServices(options =>
         {
@@ -177,14 +177,13 @@ public sealed class HttpSecurityMiddlewareTests
             options.HttpSecurity.ReferrerPolicy = "bad\r\nvalue";
         });
 
-        var app = BuildPipeline(
-            services,
-            context => Task.CompletedTask);
+        var exception = Assert.Throws<OptionsValidationException>(
+            () => BuildPipeline(
+                services,
+                context => Task.CompletedTask));
 
-        var context = CreateContext();
-
-        await Assert.ThrowsAsync<ArgumentException>(
-            () => app(context));
+        Assert.Contains("HttpSecurity", exception.Message);
+        Assert.Contains("carriage return or line feed", exception.Message);
     }
 
     private static ServiceCollection CreateServices(
