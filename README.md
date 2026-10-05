@@ -104,27 +104,50 @@ Exception details can be enabled explicitly for development environments with `I
 
 ### 3. Correlation ID / Request ID
 
-Every request should be traceable.
+Every request receives one effective identifier.
 
-Expected flow:
+By default the middleware uses this precedence:
 
 ```text
-Incoming request
+X-Correlation-ID
       |
-      v
-Validate incoming correlation ID
+      +--> valid --> use it
       |
-      +--> missing/invalid --> generate ID
-      |
-      v
-Store ID in request context
-      |
-      +--> logs
-      +--> error response
-      +--> response header
+      +--> missing/invalid
+                 |
+                 v
+          X-Request-ID
+                 |
+                 +--> valid --> use it
+                 |
+                 +--> missing/invalid --> generate ID
 ```
 
-Incoming identifiers are untrusted input and must be validated.
+The effective identifier is:
+
+- Stored in the current request through ICorrelationIdAccessor.
+- Assigned to ASP.NET Core's HttpContext.TraceIdentifier.
+- Added to the standard logging scope for downstream logs.
+- Returned through X-Correlation-ID by default.
+- Configurable without changing application code.
+
+Incoming values are untrusted input. IDs longer than the configured limit, IDs containing unsupported characters, and multi-valued ID headers are ignored and safely replaced or resolved through the fallback header.
+
+Example:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.Correlation.MaxLength = 128;
+    options.Correlation.IncludeResponseHeader = true;
+});
+
+var app = builder.Build();
+
+app.UseBackendSafety();
+```
+
+Custom header names and ID generation are supported through CorrelationIdOptions.
 
 ### 4. Structured Request Logging
 
