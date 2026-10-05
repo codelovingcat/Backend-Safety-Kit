@@ -1,4 +1,5 @@
 using BackendSafetyKit.AspNetCore.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,7 @@ namespace BackendSafetyKit.AspNetCore.Tests;
 public sealed class GlobalExceptionHandlingMiddlewareTests
 {
     [Fact]
-    public async Task UnhandledException_ReturnsInternalServerErrorWithoutExceptionDetails()
+    public async Task UnhandledExceptionReturnsInternalServerErrorWithoutExceptionDetails()
     {
         var loggerProvider = new RecordingLoggerProvider();
         var services = new ServiceCollection();
@@ -38,7 +39,7 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task MappedException_ReturnsConfiguredStatusCode()
+    public async Task MappedExceptionReturnsConfiguredStatusCode()
     {
         var loggerProvider = new RecordingLoggerProvider();
         var services = new ServiceCollection();
@@ -67,7 +68,7 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task StartedResponse_RethrowsException()
+    public async Task StartedResponseRethrowsException()
     {
         var loggerProvider = new RecordingLoggerProvider();
         var services = new ServiceCollection();
@@ -131,6 +132,9 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
 #pragma warning disable CS0618
     private sealed class StartedResponseFeature(Stream body) : IHttpResponseFeature
     {
+        private readonly bool _hasStarted = true;
+        private readonly bool _hasCompleted;
+
         public int StatusCode { get; set; } = StatusCodes.Status200OK;
 
         public string? ReasonPhrase { get; set; }
@@ -140,9 +144,9 @@ public sealed class GlobalExceptionHandlingMiddlewareTests
 
         public Stream Body { get; set; } = body;
 
-        public bool HasStarted => true;
+        public bool HasStarted => _hasStarted;
 
-        public bool HasCompleted => false;
+        public bool HasCompleted => _hasCompleted;
 
         public void OnStarting(Func<object, Task> callback, object state)
         {
