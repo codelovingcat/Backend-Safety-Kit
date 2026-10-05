@@ -1,4 +1,5 @@
 using BackendSafetyKit;
+using BackendSafetyKit.AspNetCore.Correlation;
 using BackendSafetyKit.AspNetCore.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -42,6 +43,73 @@ public sealed class BackendSafetyRegistrationTests
             startupValidator.Validate);
 
         Assert.Contains("between 400 and 599", exception.Message);
+    }
+
+    [Fact]
+    public void BackendSafetyServicesUseIntentionalLifetimes()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddBackendSafety();
+
+        using var provider = services.BuildServiceProvider();
+        using var firstScope = provider.CreateScope();
+        using var secondScope = provider.CreateScope();
+
+        var firstAccessor =
+            firstScope.ServiceProvider.GetRequiredService<ICorrelationIdAccessor>();
+        var secondAccessor =
+            secondScope.ServiceProvider.GetRequiredService<ICorrelationIdAccessor>();
+        var firstMasker =
+            firstScope.ServiceProvider.GetRequiredService<ISensitiveDataMasker>();
+        var secondMasker =
+            secondScope.ServiceProvider.GetRequiredService<ISensitiveDataMasker>();
+
+        Assert.NotSame(firstAccessor, secondAccessor);
+        Assert.Same(firstMasker, secondMasker);
+    }
+
+    [Fact]
+    public async Task CorrelationAccessorDoesNotLeakAcrossConcurrentRequestScopes()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddBackendSafety(options =>
+            options.Features.EnableRequestLogging = false);
+
+        using var provider = services.BuildServiceProvider();
+
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                _ = context.RequestServices
+                    .GetRequiredService<ICorrelationIdAccessor>();
+
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return Task.CompletedTask;
+            });
+
+        var results = await Task.WhenAll(
+            Enumerable.Range(1, 32).Select(async index =>
+            {
+                using var scope = provider.CreateScope();
+                var context = new DefaultHttpContext();
+                context.Request.Headers["X-Correlation-ID"] = $"request-{index}";
+                context.RequestServices = scope.ServiceProvider;
+
+                await app(context);
+
+                return context.TraceIdentifier;
+            }));
+
+        Assert.Equal(32, results.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(
+            results,
+            result => Assert.StartsWith(
+                "request-",
+                result,
+                StringComparison.Ordinal));
     }
 
     [Fact]

@@ -3,6 +3,12 @@ namespace BackendSafetyKit;
 /// <summary>
 /// Provides configuration options for Backend Safety Kit.
 /// </summary>
+/// <remarks>
+/// Configure these options during application startup and treat the resulting
+/// configuration as immutable after the application has started. Backend Safety Kit
+/// runtime services are designed to read startup configuration concurrently without
+/// request-specific shared mutable state.
+/// </remarks>
 public sealed class BackendSafetyOptions
 {
     /// <summary>
