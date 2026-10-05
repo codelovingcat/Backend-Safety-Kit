@@ -4,6 +4,7 @@ using BackendSafetyKit.AspNetCore.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -229,6 +230,69 @@ public sealed class BackendSafetyRegistrationTests
         Assert.False(context.Response.Headers.ContainsKey("X-Content-Type-Options"));
     }
 
+    private sealed class OrderingLoggerProvider(ICollection<string> order)
+        : ILoggerProvider
+    {
+        public List<LogEntry> Entries { get; } = new();
+
+        public ILogger CreateLogger(string categoryName) =>
+            new OrderingLogger(this, order);
+
+        public void Dispose()
+        {
+        }
+
+        private sealed class OrderingLogger(
+            OrderingLoggerProvider provider,
+            ICollection<string> order) : ILogger
+        {
+            public IDisposable BeginScope<TState>(TState state)
+                where TState : notnull =>
+                NullScope.Instance;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter)
+            {
+                if (eventId.Id is >= 2001 and <= 2003)
+                {
+                    order.Add($"request-log:{eventId.Id}");
+                }
+
+                provider.Entries.Add(
+                    new LogEntry(
+                        logLevel,
+                        eventId,
+                        state is IEnumerable<KeyValuePair<string, object?>> properties
+                            ? properties.ToDictionary(x => x.Key, x => x.Value)
+                            : new Dictionary<string, object?>()));
+            }
+        }
+
+        private sealed class NullScope : IDisposable
+        {
+            public static readonly NullScope Instance = new();
+
+            public void Dispose()
+            {
+            }
+        }
+    }
+
+    private sealed record LogEntry(
+        LogLevel LogLevel,
+        EventId EventId,
+        IReadOnlyDictionary<string, object?> Properties)
+    {
+        public int StatusCode =>
+            Assert.IsType<int>(Properties["StatusCode"]);
+    }
+
     private static RequestDelegate BuildPipeline(
         IServiceCollection services,
         RequestDelegate terminal)
@@ -240,6 +304,64 @@ public sealed class BackendSafetyRegistrationTests
         builder.Run(terminal);
 
         return builder.Build();
+    }
+
+    [Fact]
+    public async Task MiddlewareOrderingPreservesCorrelationTimingSecurityAndExceptionBoundaries()
+    {
+        var order = new List<string>();
+        var loggerProvider = new OrderingLoggerProvider(order);
+        var observedTiming = (RequestTimingContext?)null;
+
+        var services = new ServiceCollection();
+        services.AddLogging(builder => builder.AddProvider(loggerProvider));
+        services.AddBackendSafety(options =>
+        {
+            options.ExceptionHandling.Map<KeyNotFoundException>(
+                StatusCodes.Status404NotFound);
+
+            options.RequestTiming.OnCompleted = timing =>
+            {
+                observedTiming = timing;
+                order.Add("timing");
+            };
+        });
+
+        var app = BuildPipeline(
+            services,
+            _ =>
+            {
+                order.Add("endpoint");
+                throw new KeyNotFoundException("missing-order");
+            });
+
+        var context = new DefaultHttpContext();
+        context.Request.Headers["X-Correlation-ID"] = "order-42";
+
+        await app(context);
+
+        Assert.NotNull(observedTiming);
+        Assert.Equal(StatusCodes.Status404NotFound, observedTiming!.StatusCode);
+        Assert.Equal("order-42", observedTiming.CorrelationId);
+        Assert.Equal("order-42", context.TraceIdentifier);
+
+        var completionIndex = order.FindIndex(
+            value => value == "request-log:2002");
+        var timingIndex = order.IndexOf("timing");
+
+        Assert.True(timingIndex >= 0);
+        Assert.True(completionIndex > timingIndex);
+        Assert.Equal(
+            StatusCodes.Status404NotFound,
+            loggerProvider.Entries.Single(
+                entry => entry.EventId.Id == 2002).StatusCode);
+
+        Assert.Equal(
+            "nosniff",
+            context.Response.Headers["X-Content-Type-Options"].ToString());
+        Assert.Equal(
+            StatusCodes.Status404NotFound,
+            context.Response.StatusCode);
     }
 
     [Fact]
