@@ -113,7 +113,7 @@ public sealed class ProblemDetailsMiddlewareTests
         var body = await ReadResponseAsync(context);
 
         Assert.Equal("application/problem+json", context.Response.ContentType?.Split(';')[0]);
-        Assert.Contains(""status":500", body);
+        Assert.Contains("\"status\":500", body);
         Assert.DoesNotContain("hidden", body);
     }
 
