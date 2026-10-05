@@ -78,7 +78,10 @@ public sealed class SensitiveDataMaskerTests
         Assert.Equal("[REDACTED]", masker.MaskString("secret-token", "sessionToken"));
 
         options.AllowPartialMasking = true;
-        var partiallyMasked = masker.MaskString("secret-token", "sessionToken");
+        var partiallyConfiguredMasker = new SensitiveDataMasker(options);
+        var partiallyMasked = partiallyConfiguredMasker.MaskString(
+            "secret-token",
+            "sessionToken");
 
         Assert.Equal("se********en", partiallyMasked);
         Assert.DoesNotContain("secret-token", partiallyMasked, StringComparison.Ordinal);
