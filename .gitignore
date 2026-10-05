@@ -1,0 +1,22 @@
+## .NET
+**/bin/
+**/obj/
+**/.vs/
+*.user
+*.suo
+
+## Test / coverage
+TestResults/
+coverage/
+coverage*.xml
+
+## NuGet
+*.nupkg
+*.snupkg
+
+## IDE
+.vscode/
+
+## OS
+.DS_Store
+Thumbs.db
