@@ -13,7 +13,7 @@ public sealed class ExceptionMappingHardeningTests
         options.Map<Exception>(500);
         options.Map<ApplicationException>(422);
 
-        var exception = new InvalidOperationException("test");
+        var exception = new SpecificApplicationException();
 
         Assert.Equal(422, options.GetStatusCode(exception));
     }
@@ -28,10 +28,14 @@ public sealed class ExceptionMappingHardeningTests
         options.MapTitle<Exception>("Generic error");
         options.MapTitle<ApplicationException>("Application error");
 
-        var exception = new InvalidOperationException("test");
+        var exception = new SpecificApplicationException();
 
         Assert.Equal("application_error", options.GetErrorCode(exception));
         Assert.Equal("Application error", options.GetTitle(exception));
+    }
+
+    private sealed class SpecificApplicationException : ApplicationException
+    {
     }
 
     [Fact]
