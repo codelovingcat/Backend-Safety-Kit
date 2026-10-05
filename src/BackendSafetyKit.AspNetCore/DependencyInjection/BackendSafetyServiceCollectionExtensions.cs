@@ -1,5 +1,6 @@
 using BackendSafetyKit;
 using BackendSafetyKit.AspNetCore.Correlation;
+using BackendSafetyKit.AspNetCore.ProblemDetails;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
