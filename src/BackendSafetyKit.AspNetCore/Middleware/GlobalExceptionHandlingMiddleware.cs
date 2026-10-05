@@ -4,16 +4,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace BackendSafetyKit.AspNetCore.Middleware;
 
 internal sealed partial class GlobalExceptionHandlingMiddleware(
     RequestDelegate next,
-    IOptions<BackendSafetyOptions> options,
-    IProblemDetailsService problemDetailsService,
-    ILogger<GlobalExceptionHandlingMiddleware> logger,
-    IHostEnvironment? environment = null)
+    IOptions<BackendSafetyKit.BackendSafetyOptions> options,
+    IHostEnvironment? environment,
+    ILogger<GlobalExceptionHandlingMiddleware> logger)
 {
+    private static readonly JsonSerializerOptions ProblemDetailsJsonOptions =
+        new(JsonSerializerDefaults.Web);
+
     public async Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -42,6 +45,8 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
                 throw;
             }
 
+            var problemOptions = backendOptions.ProblemDetails;
+
             var customization = new ProblemDetailsCustomizationContext
             {
                 Exception = exception,
@@ -49,20 +54,20 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
                 RequestMethod = context.Request.Method,
                 RequestPath = context.Request.Path.ToString(),
                 TraceId = context.TraceIdentifier,
-                Type = backendOptions.ProblemDetails.DefaultType,
-                Title = backendOptions.ProblemDetails.GetTitle(exception)
+                Type = problemOptions.DefaultType,
+                Title = problemOptions.GetTitle(exception)
                     ?? GetDefaultTitle(statusCode),
-                Detail = backendOptions.ProblemDetails.IncludeExceptionDetailInDevelopment &&
+                Detail = problemOptions.IncludeExceptionDetailInDevelopment &&
                     environment?.IsDevelopment() == true
                     ? exception.Message
                     : null,
-                Instance = backendOptions.ProblemDetails.IncludeInstance
+                Instance = problemOptions.IncludeInstance
                     ? context.Request.Path.ToString()
                     : null,
-                ErrorCode = backendOptions.ProblemDetails.GetErrorCode(exception)
+                ErrorCode = problemOptions.GetErrorCode(exception)
             };
 
-            backendOptions.ProblemDetails.Customize?.Invoke(customization);
+            problemOptions.Customize?.Invoke(customization);
 
             var problemDetails = new ProblemDetails
             {
@@ -73,7 +78,7 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
                 Instance = customization.Instance
             };
 
-            if (backendOptions.ProblemDetails.IncludeTraceId)
+            if (problemOptions.IncludeTraceId)
             {
                 problemDetails.Extensions["traceId"] = customization.TraceId;
             }
@@ -90,13 +95,13 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
 
             context.Response.Clear();
             context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/problem+json; charset=utf-8";
 
-            await problemDetailsService.WriteAsync(
-                new ProblemDetailsContext
-                {
-                    HttpContext = context,
-                    ProblemDetails = problemDetails
-                });
+            await JsonSerializer.SerializeAsync(
+                context.Response.Body,
+                problemDetails,
+                ProblemDetailsJsonOptions,
+                context.RequestAborted);
         }
     }
 
