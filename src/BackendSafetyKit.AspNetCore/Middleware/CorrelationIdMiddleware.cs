@@ -14,7 +14,7 @@ internal sealed class CorrelationIdMiddleware(
 {
     public async Task InvokeAsync(
         HttpContext context,
-        ICorrelationIdAccessor accessor)
+        CorrelationIdAccessor accessor)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(accessor);
@@ -59,7 +59,7 @@ internal sealed class CorrelationIdMiddleware(
 
         var value = headerValues.ToString().Trim();
 
-        if (value.Length is 0 or > maxLength)
+        if (value.Length == 0 || value.Length > maxLength)
         {
             return null;
         }
@@ -71,7 +71,7 @@ internal sealed class CorrelationIdMiddleware(
     {
         var generated = options.Generator().Trim();
 
-        if (generated.Length is 0 or > options.MaxLength ||
+        if (generated.Length == 0 || generated.Length > options.MaxLength ||
             !IsValidCorrelationId(generated))
         {
             throw new InvalidOperationException(
