@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
-namespace BackendSafetyKit.AspNetCore.ProblemDetails;
+namespace BackendSafetyKit.AspNetCore.Writers;
 
 internal sealed class BackendSafetyProblemDetailsWriter : IProblemDetailsWriter
 {
