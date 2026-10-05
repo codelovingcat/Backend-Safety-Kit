@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BackendSafetyKit/BackendSafetyKit.csproj" />
+    <Project Path="src/BackendSafetyKit.AspNetCore/BackendSafetyKit.AspNetCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BackendSafetyKit.Tests/BackendSafetyKit.Tests.csproj" />
+    <Project Path="tests/BackendSafetyKit.AspNetCore.Tests/BackendSafetyKit.AspNetCore.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/BackendSafetyKit.SampleApi/BackendSafetyKit.SampleApi.csproj" />
+  </Folder>
+</Solution>
