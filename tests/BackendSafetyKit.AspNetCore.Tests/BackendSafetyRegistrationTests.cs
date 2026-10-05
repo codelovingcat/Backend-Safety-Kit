@@ -27,6 +27,7 @@ public sealed class BackendSafetyRegistrationTests
     public async Task UseBackendSafetyAllowsRequestToReachEndpoint()
     {
         var services = new ServiceCollection();
+        services.AddLogging();
         services.AddBackendSafety();
 
         var builder = new ApplicationBuilder(services.BuildServiceProvider());
