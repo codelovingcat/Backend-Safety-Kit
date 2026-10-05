@@ -280,7 +280,7 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
 
     [LoggerMessage(
         EventId = 2001,
-        Name = "BackendSafetyKit.HttpRequest.Completed",
+        EventName = "BackendSafetyKit.HttpRequest.Completed",
         Message = "HTTP {HttpMethod} {RequestPath} completed with status {StatusCode} in {DurationMs} ms. CorrelationId={CorrelationId}; Host={Host}; IsFailure={IsFailure}; FailureType={FailureType}; RequestHeaders={RequestHeaders}; ResponseHeaders={ResponseHeaders}.")]
     private static partial void LogCompletionInformation(
         ILogger logger,
@@ -298,7 +298,7 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
 
     [LoggerMessage(
         EventId = 2002,
-        Name = "BackendSafetyKit.HttpRequest.ClientError",
+        EventName = "BackendSafetyKit.HttpRequest.ClientError",
         Message = "HTTP {HttpMethod} {RequestPath} completed with status {StatusCode} in {DurationMs} ms. CorrelationId={CorrelationId}; Host={Host}; IsFailure={IsFailure}; FailureType={FailureType}; RequestHeaders={RequestHeaders}; ResponseHeaders={ResponseHeaders}.")]
     private static partial void LogCompletionWarning(
         ILogger logger,
@@ -316,7 +316,7 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
 
     [LoggerMessage(
         EventId = 2003,
-        Name = "BackendSafetyKit.HttpRequest.ServerError",
+        EventName = "BackendSafetyKit.HttpRequest.ServerError",
         Message = "HTTP {HttpMethod} {RequestPath} completed with status {StatusCode} in {DurationMs} ms. CorrelationId={CorrelationId}; Host={Host}; IsFailure={IsFailure}; FailureType={FailureType}; RequestHeaders={RequestHeaders}; ResponseHeaders={ResponseHeaders}.")]
     private static partial void LogCompletionError(
         ILogger logger,
