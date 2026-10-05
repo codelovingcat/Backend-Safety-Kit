@@ -39,7 +39,7 @@ var app = builder.Build();
 app.UseBackendSafety();
 ```
 
-The package should work safely with minimal configuration. Advanced applications can configure individual features when needed.
+The package should work safely with minimal configuration and should remain transparent about every behavior it adds. Advanced applications can configure individual features when needed.
 
 ## Initial Feature Set
 
