@@ -69,6 +69,47 @@ public sealed class StructuredRequestLoggingMiddlewareTests
         Assert.Equal(true, entry.Properties["IsFailure"]);
     }
 
+
+    [Fact]
+    public async Task AllowlistedSensitiveHeadersAreMaskedBeforeLogging()
+    {
+        var loggerProvider = new RecordingLoggerProvider();
+        var services = CreateServices(
+            loggerProvider,
+            options =>
+            {
+                options.RequestLogging.AllowedRequestHeaders.Add("Authorization");
+                options.RequestLogging.AllowedResponseHeaders.Add("Set-Cookie");
+                options.RequestLogging.DeniedRequestHeaders.Remove("Authorization");
+                options.RequestLogging.DeniedResponseHeaders.Remove("Set-Cookie");
+            });
+
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                context.Response.Headers["Set-Cookie"] = "session=response-secret";
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Headers["Authorization"] = "Bearer request-secret";
+
+        await InvokeAsync(app, services, context);
+
+        var entry = Assert.Single(loggerProvider.Entries, x => x.EventId == 2001);
+        var requestHeaders =
+            Assert.IsType<Dictionary<string, string>>(entry.Properties["RequestHeaders"]);
+        var responseHeaders =
+            Assert.IsType<Dictionary<string, string>>(entry.Properties["ResponseHeaders"]);
+
+        Assert.Equal("[REDACTED]", requestHeaders["Authorization"]);
+        Assert.Equal("[REDACTED]", responseHeaders["Set-Cookie"]);
+        Assert.DoesNotContain("request-secret", entry.RenderedMessage, StringComparison.Ordinal);
+        Assert.DoesNotContain("response-secret", entry.RenderedMessage, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task AllowedHeadersAreLoggedWhileDeniedHeadersRemainExcluded()
     {
