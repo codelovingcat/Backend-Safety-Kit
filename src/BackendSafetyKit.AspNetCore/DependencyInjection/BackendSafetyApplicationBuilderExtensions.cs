@@ -1,5 +1,6 @@
 using BackendSafetyKit.AspNetCore.Middleware;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendSafetyKit.AspNetCore.DependencyInjection;
 
