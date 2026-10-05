@@ -116,15 +116,29 @@ public sealed class ProblemDetailsOptions
             return exactValue;
         }
 
-        foreach (var mapping in mappings)
+        var bestMapping = mappings
+            .Where(mapping => mapping.Key.IsAssignableFrom(exceptionType))
+            .OrderByDescending(mapping => GetInheritanceDepth(mapping.Key))
+            .ThenBy(mapping => mapping.Key.FullName, StringComparer.Ordinal)
+            .FirstOrDefault();
+
+        return bestMapping.Equals(default(KeyValuePair<Type, string>))
+            ? null
+            : bestMapping.Value;
+    }
+
+    private static int GetInheritanceDepth(Type type)
+    {
+        var depth = 0;
+        var current = type;
+
+        while (current.BaseType is not null)
         {
-            if (mapping.Key.IsAssignableFrom(exceptionType))
-            {
-                return mapping.Value;
-            }
+            depth++;
+            current = current.BaseType;
         }
 
-        return null;
+        return depth;
     }
 
     private static void ValidateMappings(
