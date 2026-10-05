@@ -48,12 +48,16 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
         Exception? unhandledException)
     {
         var statusCode = context.Response.StatusCode;
-        var level = ToLogLevel(
-            unhandledException is not null || statusCode >= 500
-                ? options.ServerErrorLogLevel
-                : statusCode >= 400
-                    ? options.ClientErrorLogLevel
-                    : options.SuccessfulRequestLogLevel);
+        var isServerError = unhandledException is not null || statusCode >= 500;
+        var isClientError = !isServerError && statusCode >= 400;
+
+        var configuredLevel = isServerError
+            ? options.ServerErrorLogLevel
+            : isClientError
+                ? options.ClientErrorLogLevel
+                : options.SuccessfulRequestLogLevel;
+
+        var level = ToLogLevel(configuredLevel);
 
         if (level == LogLevel.None || !logger.IsEnabled(level))
         {
@@ -92,11 +96,10 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
             masker);
 
         var failureType = unhandledException?.GetType().FullName;
-        var isFailure = unhandledException is not null || statusCode >= 400;
+        var isFailure = isServerError || isClientError;
 
-        switch (level)
+        if (isServerError)
         {
-            case LogLevel.Error:
                 LogCompletionError(
                     logger,
                     level,
@@ -110,9 +113,12 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
                     failureType,
                     requestHeaders,
                     responseHeaders);
-                break;
+                return;
 
-            case LogLevel.Warning:
+        }
+
+        if (isClientError)
+        {
                 LogCompletionWarning(
                     logger,
                     level,
@@ -126,10 +132,10 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
                     failureType,
                     requestHeaders,
                     responseHeaders);
-                break;
+                return;
+        }
 
-            default:
-                LogCompletionInformation(
+        LogCompletionInformation(
                     logger,
                     level,
                     context.Request.Method,
@@ -142,8 +148,6 @@ internal sealed partial class StructuredRequestLoggingMiddleware(
                     failureType,
                     requestHeaders,
                     responseHeaders);
-                break;
-        }
     }
 
     private static LogLevel ToLogLevel(RequestLoggingLogLevel logLevel) =>
