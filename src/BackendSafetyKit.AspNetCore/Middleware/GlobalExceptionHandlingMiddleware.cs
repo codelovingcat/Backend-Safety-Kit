@@ -69,6 +69,7 @@ internal sealed partial class GlobalExceptionHandlingMiddleware(
             };
 
             problemOptions.Customize?.Invoke(customization);
+            problemOptions.ValidateCustomization(customization);
 
             var problemDetails = new ProblemDetails
             {
