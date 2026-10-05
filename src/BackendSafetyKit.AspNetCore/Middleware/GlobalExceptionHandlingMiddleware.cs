@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace BackendSafetyKit.AspNetCore.Middleware;
 
-internal sealed class GlobalExceptionHandlingMiddleware(
+internal sealed partial class GlobalExceptionHandlingMiddleware(
     RequestDelegate next,
     IOptions<BackendSafetyOptions> options,
     ILogger<GlobalExceptionHandlingMiddleware> logger)
@@ -29,10 +29,9 @@ internal sealed class GlobalExceptionHandlingMiddleware(
 
             var statusCode = exceptionOptions.GetStatusCode(exception);
 
-            logger.LogError(
-                UnhandledExceptionEvent,
+            LogUnhandledException(
+                logger,
                 exception,
-                "Unhandled exception while processing {RequestMethod} {RequestPath}. Returning status code {StatusCode}.",
                 context.Request.Method,
                 context.Request.Path,
                 statusCode);
@@ -61,6 +60,17 @@ internal sealed class GlobalExceptionHandlingMiddleware(
                 cancellationToken: context.RequestAborted);
         }
     }
+
+    [LoggerMessage(
+        EventId = 1000,
+        Level = LogLevel.Error,
+        Message = "Unhandled exception while processing {RequestMethod} {RequestPath}. Returning status code {StatusCode}.")]
+    private static partial void LogUnhandledException(
+        ILogger logger,
+        Exception exception,
+        string requestMethod,
+        string requestPath,
+        int statusCode);
 
     private sealed class SafeExceptionResponse
     {
