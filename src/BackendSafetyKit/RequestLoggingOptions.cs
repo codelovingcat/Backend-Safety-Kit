@@ -108,8 +108,7 @@ public sealed class RequestLoggingOptions
     private static bool IsTokenCharacter(char character) =>
         char.IsAsciiLetterOrDigit(character) ||
         character is
-            '!' or '#' or ' or '%' or '&' or '*' or '+' or '-' or '.' or
+            '!' or '#' or '$' or '%' or '&' or '*' or '+' or '-' or '.' or
             '^' or '_' or '|' or '~' ||
         character == (char)39 ||
         character == (char)96;
-}
