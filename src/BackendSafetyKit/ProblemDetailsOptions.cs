@@ -107,6 +107,28 @@ public sealed class ProblemDetailsOptions
         ValidateMappings(TitleMappings, "title");
     }
 
+    internal void ValidateCustomization(ProblemDetailsCustomizationContext customization)
+    {
+        ArgumentNullException.ThrowIfNull(customization);
+
+        if (string.IsNullOrWhiteSpace(customization.Type))
+        {
+            throw new ArgumentException(
+                "A ProblemDetails type is required after customization.",
+                nameof(customization));
+        }
+
+        foreach (var extension in customization.Extensions)
+        {
+            if (string.IsNullOrWhiteSpace(extension.Key))
+            {
+                throw new ArgumentException(
+                    "ProblemDetails extension names cannot be empty.",
+                    nameof(customization));
+            }
+        }
+    }
+
     private static string? GetMappedValue(
         IDictionary<Type, string> mappings,
         Type exceptionType)
