@@ -112,3 +112,4 @@ public sealed class RequestLoggingOptions
             '^' or '_' or '|' or '~' ||
         character == (char)39 ||
         character == (char)96;
+}
