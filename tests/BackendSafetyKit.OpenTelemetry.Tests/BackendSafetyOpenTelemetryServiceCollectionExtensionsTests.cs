@@ -15,6 +15,7 @@ public sealed class BackendSafetyOpenTelemetryServiceCollectionExtensionsTests
         var services = new ServiceCollection();
 
         services.AddBackendSafetyOpenTelemetry();
+        services.AddOpenTelemetry();
 
         using var provider = services.BuildServiceProvider();
 
@@ -31,6 +32,7 @@ public sealed class BackendSafetyOpenTelemetryServiceCollectionExtensionsTests
         {
             options.EnableTracing = false;
         });
+        tracingDisabledServices.AddOpenTelemetry();
 
         using var tracingDisabledProvider = tracingDisabledServices.BuildServiceProvider();
 
@@ -43,6 +45,7 @@ public sealed class BackendSafetyOpenTelemetryServiceCollectionExtensionsTests
         {
             options.EnableMetrics = false;
         });
+        metricsDisabledServices.AddOpenTelemetry();
 
         using var metricsDisabledProvider = metricsDisabledServices.BuildServiceProvider();
 
@@ -56,6 +59,7 @@ public sealed class BackendSafetyOpenTelemetryServiceCollectionExtensionsTests
         var services = new ServiceCollection();
 
         services.AddBackendSafetyOpenTelemetry();
+        services.AddOpenTelemetry();
 
         using var provider = services.BuildServiceProvider();
         using var tracerProvider = provider.GetRequiredService<TracerProvider>();
