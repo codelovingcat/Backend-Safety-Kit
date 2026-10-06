@@ -1,5 +1,7 @@
 using BackendSafetyKit;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 
 namespace BackendSafetyKit.OpenTelemetry.DependencyInjection;
 
