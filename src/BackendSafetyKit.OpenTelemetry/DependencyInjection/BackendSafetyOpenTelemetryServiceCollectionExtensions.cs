@@ -1,8 +1,6 @@
 using BackendSafetyKit;
 using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
+using Microsoft.Extensions.Options;
 
 namespace BackendSafetyKit.OpenTelemetry.DependencyInjection;
 
@@ -12,34 +10,49 @@ namespace BackendSafetyKit.OpenTelemetry.DependencyInjection;
 public static class BackendSafetyOpenTelemetryServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the Backend Safety Kit activity source and meter with the OpenTelemetry SDK.
+    /// Registers the Backend Safety Kit activity source and meter with OpenTelemetry provider configuration.
     /// </summary>
     /// <param name="services">The application service collection.</param>
     /// <param name="configure">Optional integration configuration.</param>
-    /// <returns>The OpenTelemetry builder for additional exporter and resource configuration.</returns>
-    public static OpenTelemetryBuilder AddBackendSafetyOpenTelemetry(
+    /// <returns>The same service collection for chaining.</returns>
+    public static IServiceCollection AddBackendSafetyOpenTelemetry(
         this IServiceCollection services,
         Action<BackendSafetyOpenTelemetryOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        var options = new BackendSafetyOpenTelemetryOptions();
-        configure?.Invoke(options);
+        services.AddOptions<BackendSafetyOpenTelemetryOptions>();
 
-        var builder = services.AddOpenTelemetry();
-
-        if (options.EnableTracing)
+        if (configure is not null)
         {
-            builder.WithTracing(tracing =>
-                tracing.AddSource(BackendSafetyDiagnostics.ActivitySource.Name));
+            services.Configure(configure);
         }
 
-        if (options.EnableMetrics)
+        services.ConfigureOpenTelemetryTracerProvider((serviceProvider, tracerProviderBuilder) =>
         {
-            builder.WithMetrics(metrics =>
-                metrics.AddMeter(BackendSafetyMetrics.MeterName));
-        }
+            var options = serviceProvider
+                .GetRequiredService<IOptions<BackendSafetyOpenTelemetryOptions>>()
+                .Value;
 
-        return builder;
+            if (options.EnableTracing)
+            {
+                tracerProviderBuilder.AddSource(
+                    BackendSafetyDiagnostics.ActivitySource.Name);
+            }
+        });
+
+        services.ConfigureOpenTelemetryMeterProvider((serviceProvider, meterProviderBuilder) =>
+        {
+            var options = serviceProvider
+                .GetRequiredService<IOptions<BackendSafetyOpenTelemetryOptions>>()
+                .Value;
+
+            if (options.EnableMetrics)
+            {
+                meterProviderBuilder.AddMeter(BackendSafetyMetrics.MeterName);
+            }
+        });
+
+        return services;
     }
 }
