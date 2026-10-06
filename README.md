@@ -180,7 +180,7 @@ builder.Services.AddBackendSafety(options =>
 });
 ```
 
-The package does not export telemetry or require OpenTelemetry. An application or a future optional integration package can subscribe to `BackendSafetyDiagnostics.ActivitySource`.
+The core package does not export telemetry or require OpenTelemetry. The optional `BackendSafetyKit.OpenTelemetry` package can subscribe this activity source to an OpenTelemetry provider.
 
 An existing server activity is reused, preventing duplicate request spans when the hosting stack or an observability integration has already created `Activity.Current`. Disabling distributed tracing removes the package middleware without affecting correlation IDs or request handling.
 
@@ -346,19 +346,48 @@ HTTP request metrics are recorded from the existing request timing middleware:
 
 Metric tags are deliberately limited to the HTTP method and response status code. Paths, query strings, correlation IDs, headers, request bodies, and other potentially high-cardinality or sensitive values are not emitted as metric tags.
 
-The core package does not export telemetry and does not require OpenTelemetry. Applications or the future optional OpenTelemetry package can subscribe to the meter:
+The core package does not export telemetry and does not require OpenTelemetry. The optional `BackendSafetyKit.OpenTelemetry` package can subscribe the meter to an OpenTelemetry provider.
+
+### 9. OpenTelemetry Integration
+
+Install the optional integration package:
+
+```bash
+dotnet add package BackendSafetyKit.OpenTelemetry
+```
+
+Register Backend Safety Kit's existing tracing and metrics sources with OpenTelemetry:
 
 ```csharp
-builder.Services.AddOpenTelemetry()
+using BackendSafetyKit.OpenTelemetry.DependencyInjection;
+
+builder.Services
+    .AddBackendSafetyOpenTelemetry()
+    .WithTracing(tracing =>
+    {
+        // Add your preferred exporter here.
+    })
     .WithMetrics(metrics =>
     {
-        metrics.AddMeter(BackendSafetyMetrics.MeterName);
+        // Add your preferred exporter here.
     });
 ```
 
-The metrics layer does not make network calls. If a consumer's metrics listener throws while a request is being recorded, the request continues and the failure is written to the existing structured diagnostics logger.
+Tracing and metrics are enabled by default. Each signal can be disabled independently:
 
-### 9. Secure-by-Default HTTP Configuration
+```csharp
+builder.Services.AddBackendSafetyOpenTelemetry(options =>
+{
+    options.EnableTracing = true;
+    options.EnableMetrics = false;
+});
+```
+
+The integration package does not add an exporter, make network calls, or enable automatic ASP.NET Core instrumentation. It only registers the Backend Safety Kit `ActivitySource` and `Meter` with the OpenTelemetry SDK, which leaves exporter, resource, sampling, and transport choices with the application.
+
+The package currently targets OpenTelemetry 1.19.1. citeturn513420search0turn513420search2
+
+### 10. Secure-by-Default HTTP Configuration
 
 The kit applies a deliberately small set of HTTP hardening defaults through `HttpSecurityOptions`.
 
@@ -394,7 +423,7 @@ The package does not automatically configure HSTS, HTTPS redirection, authentica
 
 Existing ProblemDetails behavior remains safe by default: exception details are not returned unless explicitly enabled for development, and development-only details are still suppressed outside the Development environment.
 
-### 10. Health and Diagnostics
+### 11. Health and Diagnostics
 
 The kit can integrate with the standard ASP.NET Core Health Checks infrastructure without adding external services.
 
@@ -551,6 +580,17 @@ Examples:
 - ProblemDetails integration
 - Request/response diagnostics
 
+### BackendSafetyKit.OpenTelemetry
+
+Contains the optional OpenTelemetry SDK integration.
+
+It registers the package's existing:
+
+- `BackendSafetyDiagnostics.ActivitySource`
+- `BackendSafetyMetrics.Meter`
+
+It does not add exporters or automatic ASP.NET Core instrumentation, so applications retain control over resource attributes, sampling, exporters, and transport.
+
 ### Future Optional Packages
 
 Provider-specific integrations should be separate packages.
@@ -558,7 +598,6 @@ Provider-specific integrations should be separate packages.
 Possible examples:
 
 ```text
-BackendSafetyKit.OpenTelemetry
 BackendSafetyKit.Redis
 BackendSafetyKit.EntityFrameworkCore
 ```
