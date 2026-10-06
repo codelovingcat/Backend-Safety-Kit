@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>BackendSafetyKit.OpenTelemetry</PackageId>
+    <Title>Backend Safety Kit OpenTelemetry Integration</Title>
+    <Description>Optional OpenTelemetry integration for Backend Safety Kit tracing and metrics.</Description>
+    <PackageTags>aspnetcore;backend;security;diagnostics;metrics;tracing;opentelemetry;observability</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RepositoryUrl>https://github.com/codelovingcat/Backend-Safety-Kit</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Version>0.1.0</Version>
+    <Authors>codelovingcat</Authors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BackendSafetyKit\BackendSafetyKit.csproj" />
+    <PackageReference Include="OpenTelemetry.Api.ProviderBuilderExtensions" Version="1.19.1" />
+    <None Include="$(MSBuildThisFileDirectory)..\..\README.md"
+          Pack="true"
+          PackagePath="README.md"
+          PackageReadmeFile="README.md" />
+  </ItemGroup>
+</Project>
