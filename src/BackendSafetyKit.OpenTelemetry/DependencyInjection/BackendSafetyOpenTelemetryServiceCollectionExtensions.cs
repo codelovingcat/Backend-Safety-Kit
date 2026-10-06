@@ -1,6 +1,5 @@
 using BackendSafetyKit;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace BackendSafetyKit.OpenTelemetry.DependencyInjection;
 
@@ -21,19 +20,11 @@ public static class BackendSafetyOpenTelemetryServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddOptions<BackendSafetyOpenTelemetryOptions>();
+        var options = new BackendSafetyOpenTelemetryOptions();
+        configure?.Invoke(options);
 
-        if (configure is not null)
+        services.ConfigureOpenTelemetryTracerProvider((_, tracerProviderBuilder) =>
         {
-            services.Configure(configure);
-        }
-
-        services.ConfigureOpenTelemetryTracerProvider((serviceProvider, tracerProviderBuilder) =>
-        {
-            var options = serviceProvider
-                .GetRequiredService<IOptions<BackendSafetyOpenTelemetryOptions>>()
-                .Value;
-
             if (options.EnableTracing)
             {
                 tracerProviderBuilder.AddSource(
@@ -41,12 +32,8 @@ public static class BackendSafetyOpenTelemetryServiceCollectionExtensions
             }
         });
 
-        services.ConfigureOpenTelemetryMeterProvider((serviceProvider, meterProviderBuilder) =>
+        services.ConfigureOpenTelemetryMeterProvider((_, meterProviderBuilder) =>
         {
-            var options = serviceProvider
-                .GetRequiredService<IOptions<BackendSafetyOpenTelemetryOptions>>()
-                .Value;
-
             if (options.EnableMetrics)
             {
                 meterProviderBuilder.AddMeter(BackendSafetyMetrics.MeterName);
