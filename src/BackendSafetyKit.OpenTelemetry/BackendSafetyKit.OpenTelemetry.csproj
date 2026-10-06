@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BackendSafetyKit\BackendSafetyKit.csproj" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
+    <PackageReference Include="OpenTelemetry.Api.ProviderBuilderExtensions" Version="1.19.1" />
     <None Include="$(MSBuildThisFileDirectory)..\..\README.md"
           Pack="true"
           PackagePath="README.md"
