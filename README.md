@@ -361,8 +361,9 @@ Register Backend Safety Kit's existing tracing and metrics sources with OpenTele
 ```csharp
 using BackendSafetyKit.OpenTelemetry.DependencyInjection;
 
-builder.Services
-    .AddBackendSafetyOpenTelemetry()
+builder.Services.AddBackendSafetyOpenTelemetry();
+
+builder.Services.AddOpenTelemetry()
     .WithTracing(tracing =>
     {
         // Add your preferred exporter here.
@@ -385,7 +386,7 @@ builder.Services.AddBackendSafetyOpenTelemetry(options =>
 
 The integration package does not add an exporter, make network calls, or enable automatic ASP.NET Core instrumentation. It only registers the Backend Safety Kit `ActivitySource` and `Meter` with the OpenTelemetry SDK, which leaves exporter, resource, sampling, and transport choices with the application.
 
-The package currently targets OpenTelemetry 1.19.1. citeturn513420search0turn513420search2
+The package currently targets OpenTelemetry 1.19.1.
 
 ### 10. Secure-by-Default HTTP Configuration
 
