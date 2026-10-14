@@ -21,6 +21,8 @@ These concerns are important, but they should not force every development team t
 
 Backend Safety Kit packages those concerns into a reusable layer while staying out of business logic.
 
+Security architecture and private vulnerability-reporting guidance are documented in [SECURITY.md](SECURITY.md).
+
 ## Intended Developer Experience
 
 The common case should be close to this:
@@ -333,7 +335,39 @@ builder.Services.AddBackendSafety(options =>
 
 The completion callback receives only safe diagnostic metadata: method, path, status code, correlation ID, duration, and slow-request state. Request bodies and query strings are not included.
 
-### 8. Metrics
+### 8. Public Diagnostic Event Contract
+
+The ASP.NET Core request-timing middleware can publish a dependency-free, structured diagnostic event to each registered `IBackendSafetyDiagnosticSink`. Register a sink in dependency injection; no exporter, telemetry SDK, or network connection is added by the core package:
+
+```csharp
+using BackendSafetyKit;
+using BackendSafetyKit.Abstractions;
+
+public sealed class ApplicationDiagnosticSink : IBackendSafetyDiagnosticSink
+{
+    public void Write(BackendSafetyDiagnosticEvent diagnosticEvent)
+    {
+        // Send the approved event to your application's existing diagnostics system.
+        Console.WriteLine($"{diagnosticEvent.Timestamp:O} {diagnosticEvent.Severity} {diagnosticEvent.Name}");
+    }
+}
+
+builder.Services.AddSingleton<IBackendSafetyDiagnosticSink, ApplicationDiagnosticSink>();
+```
+
+The public event contract exposes stable event names through `BackendSafetyDiagnosticEventNames` and stable property names through `BackendSafetyDiagnosticPropertyNames`:
+
+| Event | Severity | When emitted |
+|---|---|---|
+| `BackendSafetyKit.HttpRequest.Completed` | Information, or Warning when slow | A request completes with a status below 400 |
+| `BackendSafetyKit.HttpRequest.ClientError` | Warning | A request completes with a 4xx status code |
+| `BackendSafetyKit.HttpRequest.ServerError` | Error | A request completes with a 5xx status code |
+
+Each event contains a UTC timestamp and the following allowlisted properties: normalized HTTP method, response status code, duration in milliseconds, and whether the slow-request threshold was reached. Paths, query strings, correlation IDs, request/response headers, bodies, and exception details are deliberately excluded to reduce data-leakage and cardinality risks.
+
+`BackendSafetyDiagnosticEvent.Properties` is a read-only snapshot. Exceptions from custom sinks are isolated: they do not fail or interrupt the request and are logged as event ID `3004`. Events are published by the request-timing middleware, so disabling `Features.EnableRequestTiming` also disables this event stream.
+
+### 9. Metrics
 
 The kit exposes a dependency-free `System.Diagnostics.Metrics.Meter` named `BackendSafetyKit`.
 
@@ -350,7 +384,7 @@ Metric tags are deliberately limited to the HTTP method and response status code
 
 The core package does not export telemetry and does not require OpenTelemetry. The optional `BackendSafetyKit.OpenTelemetry` package can subscribe the meter to an OpenTelemetry provider.
 
-### 9. OpenTelemetry Integration
+### 10. OpenTelemetry Integration
 
 Install the optional integration package:
 
@@ -390,7 +424,7 @@ The integration package does not add an exporter, make network calls, or enable 
 
 The package currently targets OpenTelemetry 1.19.1.
 
-### 10. Secure-by-Default HTTP Configuration
+### 11. Secure-by-Default HTTP Configuration
 
 The kit applies a deliberately small set of HTTP hardening defaults through `HttpSecurityOptions`.
 
@@ -400,6 +434,19 @@ The default behavior is intentionally conservative:
 - Request body size is not changed unless `MaxRequestBodySize` is explicitly configured.
 - `X-Frame-Options`, `Referrer-Policy`, and `Content-Security-Policy` are disabled by default because they can affect legitimate browser-facing applications.
 - Existing response headers are preserved and are never overwritten by the package.
+
+Content Security Policy can be enabled in **report-only** mode before enforcement. Report-only policies let browsers report violations without blocking resources, which makes them useful while learning which scripts, styles, images, and connections an application actually needs:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.HttpSecurity.EnableContentSecurityPolicyReportOnlyHeader = true;
+    options.HttpSecurity.ContentSecurityPolicyReportOnly =
+        "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+});
+```
+
+The package does not collect CSP reports or configure a reporting endpoint. Add your own `report-to` or `report-uri` directive only after selecting and securing a reporting endpoint. Once the policy is verified against real application behavior, consider enabling `Content-Security-Policy` enforcement separately. The enforcing and report-only headers can coexist during staged policy rollout. Both remain disabled by default, and application-supplied headers take precedence.
 
 Example:
 
@@ -422,11 +469,13 @@ builder.Services.AddBackendSafety(options =>
 
 A configured request body limit is applied through ASP.NET Core's `IHttpMaxRequestBodySizeFeature`. If the active server does not expose that feature or the server has already made the limit read-only, configuration fails instead of silently doing nothing.
 
+When a configured limit is exceeded by a declared `Content-Length`, the middleware returns `413 Payload Too Large` before invoking the application endpoint. Requests with an unknown/chunked length are still constrained by the server-level body-size feature as the body is read. A null limit leaves both checks unchanged; size enforcement is not inferred from a global default.
+
 The package does not automatically configure HSTS, HTTPS redirection, authentication, authorization, CORS, cookies, or reverse-proxy trust. Those behaviors depend on the host application's deployment and security architecture.
 
 Existing ProblemDetails behavior remains safe by default: exception details are not returned unless explicitly enabled for development, and development-only details are still suppressed outside the Development environment.
 
-### 11. Health and Diagnostics
+### 12. Health and Diagnostics
 
 The kit can integrate with the standard ASP.NET Core Health Checks infrastructure without adding external services.
 
@@ -542,6 +591,44 @@ This ordering is a compatibility contract:
 
 Regression tests cover these relationships together so future middleware changes cannot silently reorder the safety boundaries.
 
+## Reverse Proxy and Forwarded-Header Security
+
+Backend Safety Kit does not enable or trust forwarded headers automatically. A reverse proxy can affect the apparent request scheme and client address, so configure ASP.NET Core's forwarded-header middleware explicitly and trust only the proxy addresses or networks that you control.
+
+Configure the selected headers and trusted proxy before building the app:
+
+```csharp
+using System.Net;
+using Microsoft.AspNetCore.HttpOverrides;
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+
+    // Replace this example with the address of your actual trusted proxy.
+    options.KnownProxies.Add(IPAddress.Parse("10.0.0.10"));
+    options.ForwardLimit = 1;
+});
+
+var app = builder.Build();
+
+// Must run before middleware that uses Request.Scheme or RemoteIpAddress.
+app.UseForwardedHeaders();
+app.UseBackendSafety();
+```
+
+Security rules:
+
+- Configure `KnownProxies` or `KnownNetworks` for your actual deployment topology; the example address is illustrative.
+- Do not clear the trusted-proxy lists or accept forwarded headers from arbitrary internet clients just to make the headers work.
+- Enable only the forwarded headers the proxy is expected to set. If you need `X-Forwarded-Host`, validate allowed hosts and configure it deliberately.
+- Place `UseForwardedHeaders()` before `UseBackendSafety()` and any other middleware that depends on the scheme, client IP, HTTPS redirection, or generated absolute URLs.
+- When a proxy chain exists, set `ForwardLimit` to the intended number of trusted hops and define trust for each hop. Do not treat the rightmost or leftmost address as trustworthy without validating the chain.
+
+The library intentionally leaves proxy trust to the host application. It does not rewrite forwarded headers, infer trusted proxy addresses, or make network calls.
+
 ## Options Lifecycle and Service Lifetimes
 
 Backend Safety Kit treats application options as startup configuration. Configure the options while registering the services and treat them as immutable after the application starts.
@@ -640,6 +727,8 @@ When convenience and security conflict, the secure behavior wins unless the cons
 
 ## Public API Design
 
+The manually reviewed public surface and compatibility rules are tracked in [docs/public-api-review.md](docs/public-api-review.md).
+
 Public APIs should be:
 
 - Small
@@ -670,6 +759,8 @@ Avoid:
 ## Performance
 
 Backend Safety Kit runs on the request path, so performance matters.
+
+A separate BenchmarkDotNet project is available for repeatable local measurements of sensitive-data masking and request-pipeline overhead. See [BENCHMARKS.md](BENCHMARKS.md) for run instructions. Benchmark results are environment-dependent and are not treated as CI performance guarantees.
 
 Rules:
 

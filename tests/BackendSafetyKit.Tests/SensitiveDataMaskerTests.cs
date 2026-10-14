@@ -134,6 +134,41 @@ public sealed class SensitiveDataMaskerTests
     }
 
     [Fact]
+    public void SharedMaskerCanProcessConcurrentNestedPayloadsWithoutCrossRequestLeakage()
+    {
+        const int requestCount = 512;
+        var masker = new SensitiveDataMasker(new SensitiveDataMaskingOptions());
+        var results = new Dictionary<string, object?>[requestCount];
+
+        Parallel.For(0, requestCount, index =>
+        {
+            var source = new Dictionary<string, object?>
+            {
+                ["requestId"] = $"request-{index}",
+                ["credentials"] = new Dictionary<string, object?>
+                {
+                    ["password"] = $"password-{index}",
+                    ["accessToken"] = $"token-{index}"
+                }
+            };
+
+            results[index] =
+                Assert.IsType<Dictionary<string, object?>>(masker.Mask(source));
+        });
+
+        for (var index = 0; index < requestCount; index++)
+        {
+            var result = results[index];
+            var credentials =
+                Assert.IsType<Dictionary<string, object?>>(result["credentials"]);
+
+            Assert.Equal($"request-{index}", result["requestId"]);
+            Assert.Equal("[REDACTED]", credentials["password"]);
+            Assert.Equal("[REDACTED]", credentials["accessToken"]);
+        }
+    }
+
+    [Fact]
     public void MaskReturnsNullForNullInput()
     {
         var masker = new SensitiveDataMasker(new SensitiveDataMaskingOptions());
