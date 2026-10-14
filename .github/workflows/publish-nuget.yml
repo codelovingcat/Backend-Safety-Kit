@@ -12,6 +12,16 @@ jobs:
   publish:
     if: github.repository == 'codelovingcat/Backend-Safety-Kit'
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     environment: nuget-production
     permissions:
       contents: read
@@ -52,6 +62,8 @@ jobs:
         run: dotnet build BackendSafetyKit.slnx --configuration Release --no-restore
 
       - name: Test
+        env:
+          REDIS_CONNECTION: localhost:6379,abortConnect=false,connectTimeout=3000,asyncTimeout=3000
         run: dotnet test BackendSafetyKit.slnx --configuration Release --no-build --verbosity normal
 
       - name: Pack
@@ -60,14 +72,44 @@ jobs:
       - name: Validate NuGet artifacts
         run: python scripts/validate_nuget_packages.py ./artifacts
 
-      - name: Generate CycloneDX SBOM
-        uses: anchore/sbom-action@v0
+      - name: Set up Python for SBOM validation
+        uses: actions/setup-python@v5
         with:
-          path: ./artifacts
-          format: cyclonedx-json
-          output-file: ./artifacts/backend-safety-kit.sbom.json
-          upload-artifact: true
-          artifact-name: backend-safety-kit-release-sbom
+          python-version: "3.x"
+
+      - name: Install SBOM schema validator and fetch the official schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -r scripts/requirements-sbom.txt
+          curl --fail --silent --show-error --location \
+            https://cyclonedx.org/schema/bom-1.6.schema.json \
+            --output "$RUNNER_TEMP/cyclonedx-bom-1.6.schema.json"
+
+      - name: Generate and validate dependency-complete CycloneDX SBOM
+        run: >-
+          python scripts/generate_release_sbom.py ./artifacts
+          --schema "$RUNNER_TEMP/cyclonedx-bom-1.6.schema.json"
+
+      - name: Generate and verify artifact checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ./artifacts
+          sha256sum ./*.nupkg ./*.snupkg ./backend-safety-kit.sbom.json > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+
+      - name: Upload SBOM and checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-safety-kit-release-sbom-and-checksums
+          path: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
+            ./artifacts/backend-safety-kit.sbom.json
+            ./artifacts/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Attest release artifacts
         uses: actions/attest-build-provenance@v3
