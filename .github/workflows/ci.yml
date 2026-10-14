@@ -14,6 +14,16 @@ permissions:
 jobs:
   build-test-pack:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
 
     steps:
       - name: Checkout
@@ -39,6 +49,8 @@ jobs:
         run: bash scripts/check-api-compatibility.sh "$BASE_SHA"
 
       - name: Test
+        env:
+          REDIS_CONNECTION: localhost:6379,abortConnect=false,connectTimeout=3000,asyncTimeout=3000
         run: dotnet test BackendSafetyKit.slnx --configuration Release --no-build --verbosity normal
 
       - name: Pack
