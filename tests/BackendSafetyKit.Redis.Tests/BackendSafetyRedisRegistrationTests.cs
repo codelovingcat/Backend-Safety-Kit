@@ -29,8 +29,10 @@ public sealed class BackendSafetyRedisRegistrationTests
 
         using var provider = services.BuildServiceProvider();
 
-        Assert.Throws<OptionsValidationException>(
-            () => provider.GetRequiredService<IOptions<BackendSafetyRedisOptions>>().Value);
+        Assert.Throws<OptionsValidationException>(() =>
+        {
+            _ = provider.GetRequiredService<IOptions<BackendSafetyRedisOptions>>().Value;
+        });
     }
 
     [Fact]
