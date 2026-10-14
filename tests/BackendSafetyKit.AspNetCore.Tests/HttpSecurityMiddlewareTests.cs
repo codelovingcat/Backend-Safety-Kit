@@ -238,7 +238,7 @@ public sealed class HttpSecurityMiddlewareTests
         Assert.Equal(StatusCodes.Status307TemporaryRedirect, context.Response.StatusCode);
         Assert.Equal(
             "https://api.example.test:8443/base/resource?return=%2Fhome",
-            context.Response.Headers.Location.ToString());
+            context.Response.Headers["Location"].ToString());
         Assert.Equal("nosniff", context.Response.Headers["X-Content-Type-Options"].ToString());
     }
 
@@ -266,7 +266,7 @@ public sealed class HttpSecurityMiddlewareTests
         await app(context);
 
         Assert.Equal(StatusCodes.StatusPermanentRedirect, context.Response.StatusCode);
-        Assert.Equal("https://api.example.test/", context.Response.Headers.Location.ToString());
+        Assert.Equal("https://api.example.test/", context.Response.Headers["Location"].ToString());
     }
 
     [Fact]
