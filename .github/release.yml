@@ -1,0 +1,30 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+      - internal
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
+    - title: Security
+      labels:
+        - security
+    - title: Features
+      labels:
+        - enhancement
+        - feature
+    - title: Bug Fixes
+      labels:
+        - bug
+        - bugfix
+    - title: Dependencies
+      labels:
+        - dependencies
+    - title: Documentation and Developer Experience
+      labels:
+        - documentation
+        - developer-experience
+    - title: Other Changes
+      labels:
+        - "*"
