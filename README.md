@@ -296,6 +296,8 @@ builder.Services.AddBackendSafety(options =>
 
 The masker never changes the original application object. When structured data is masked, a new dictionary/list representation is returned.
 
+For null, string, and simple scalar inputs, `ISensitiveDataMasker.Mask` returns the safe result directly without allocating the reference-tracking set used for nested object graphs. Field-based masking rules are evaluated before that fast path, so secret values remain redacted.
+
 The request logging middleware uses the masker for allowlisted headers. This provides a second protection layer when an application explicitly removes a header from the logging denylist.
 
 ### 7. Request Timing and Diagnostics
