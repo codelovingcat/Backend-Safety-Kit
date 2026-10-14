@@ -446,13 +446,11 @@ def validate_sbom(
         key=lambda error: (list(map(str, error.absolute_path)), error.message),
     )
     if errors:
-        details = "
-".join(
+        details = "\n".join(
             f"- {'.'.join(map(str, error.absolute_path)) or '<root>'}: {error.message}"
             for error in errors[:20]
         )
-        fail(f"Generated SBOM does not satisfy the CycloneDX 1.6 JSON Schema:
-{details}")
+        fail(f"Generated SBOM does not satisfy the CycloneDX 1.6 JSON Schema:\n{details}")
 
     components = sbom.get("components", [])
     if not isinstance(components, list):
@@ -545,8 +543,7 @@ def main() -> int:
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
-        json.dumps(sbom, indent=2, sort_keys=False) + "
-",
+        json.dumps(sbom, indent=2, sort_keys=False) + "\n",
         encoding="utf-8",
     )
     print(f"Wrote {output_path} with {len(sbom['components'])} unique components.")
