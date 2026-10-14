@@ -22,7 +22,7 @@ jobs:
       VERSION_TAG: ${{ github.ref_name }}
     steps:
       - name: Checkout tagged source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
