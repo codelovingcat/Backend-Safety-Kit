@@ -101,6 +101,18 @@ internal sealed partial class RequestTimingMiddleware(
 
     private void WriteDiagnosticEvent(RequestTimingContext timing)
     {
+        if (diagnosticSinks is null)
+        {
+            return;
+        }
+
+        using var sinkEnumerator = diagnosticSinks.GetEnumerator();
+
+        if (!sinkEnumerator.MoveNext())
+        {
+            return;
+        }
+
         var eventName = timing.StatusCode >= 500
             ? BackendSafetyDiagnosticEventNames.HttpRequestServerError
             : timing.StatusCode >= 400
@@ -128,11 +140,11 @@ internal sealed partial class RequestTimingMiddleware(
             severity,
             properties);
 
-        foreach (var diagnosticSink in diagnosticSinks ?? Array.Empty<IBackendSafetyDiagnosticSink>())
+        do
         {
             try
             {
-                diagnosticSink.Write(diagnosticEvent);
+                sinkEnumerator.Current.Write(diagnosticEvent);
             }
             catch (Exception)
             {
@@ -140,6 +152,7 @@ internal sealed partial class RequestTimingMiddleware(
                 LogDiagnosticSinkFailure(logger);
             }
         }
+        while (sinkEnumerator.MoveNext());
     }
 
     private static string NormalizeMethod(string method) =>

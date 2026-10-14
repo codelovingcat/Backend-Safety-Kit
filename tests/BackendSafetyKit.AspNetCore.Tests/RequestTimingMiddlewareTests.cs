@@ -203,6 +203,68 @@ public sealed class RequestTimingMiddlewareTests
         Assert.True(diagnosticEvent.Timestamp <= DateTimeOffset.UtcNow);
     }
 
+    [Theory]
+    [InlineData(StatusCodes.Status404NotFound, BackendSafetyDiagnosticEventNames.HttpRequestClientError, BackendSafetyDiagnosticSeverity.Warning)]
+    [InlineData(StatusCodes.Status500InternalServerError, BackendSafetyDiagnosticEventNames.HttpRequestServerError, BackendSafetyDiagnosticSeverity.Error)]
+    public async Task DiagnosticEventMapsStatusCodeToStableNameAndSeverity(
+        int statusCode,
+        string expectedName,
+        BackendSafetyDiagnosticSeverity expectedSeverity)
+    {
+        var sink = new RecordingDiagnosticSink();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IBackendSafetyDiagnosticSink>(sink);
+        services.AddBackendSafety(options =>
+        {
+            options.RequestTiming.SlowRequestThreshold = TimeSpan.FromDays(1);
+        });
+
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = statusCode;
+                return Task.CompletedTask;
+            });
+
+        await InvokeAsync(app, services, CreateContext());
+
+        var diagnosticEvent = Assert.Single(sink.Events);
+        Assert.Equal(expectedName, diagnosticEvent.Name);
+        Assert.Equal(expectedSeverity, diagnosticEvent.Severity);
+        Assert.Equal(statusCode,
+            diagnosticEvent.Properties[BackendSafetyDiagnosticPropertyNames.HttpResponseStatusCode]);
+    }
+
+    [Fact]
+    public async Task SlowSuccessfulRequestUsesWarningSeverity()
+    {
+        var sink = new RecordingDiagnosticSink();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IBackendSafetyDiagnosticSink>(sink);
+        services.AddBackendSafety(options =>
+        {
+            options.RequestTiming.SlowRequestThreshold = TimeSpan.Zero;
+        });
+
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        await InvokeAsync(app, services, CreateContext());
+
+        var diagnosticEvent = Assert.Single(sink.Events);
+        Assert.Equal(BackendSafetyDiagnosticEventNames.HttpRequestCompleted, diagnosticEvent.Name);
+        Assert.Equal(BackendSafetyDiagnosticSeverity.Warning, diagnosticEvent.Severity);
+        Assert.True((bool)diagnosticEvent.Properties[BackendSafetyDiagnosticPropertyNames.RequestIsSlow]!);
+    }
+
     [Fact]
     public async Task DiagnosticSinkFailureDoesNotBreakRequestOrBlockOtherSinks()
     {

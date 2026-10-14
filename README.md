@@ -363,7 +363,7 @@ Each event contains a UTC timestamp and the following allowlisted properties: no
 
 `BackendSafetyDiagnosticEvent.Properties` is a read-only snapshot. Exceptions from custom sinks are isolated: they do not fail or interrupt the request and are logged as event ID `3004`. Events are published by the request-timing middleware, so disabling `Features.EnableRequestTiming` also disables this event stream.
 
-### 8. Metrics
+### 9. Metrics
 
 The kit exposes a dependency-free `System.Diagnostics.Metrics.Meter` named `BackendSafetyKit`.
 
@@ -380,7 +380,7 @@ Metric tags are deliberately limited to the HTTP method and response status code
 
 The core package does not export telemetry and does not require OpenTelemetry. The optional `BackendSafetyKit.OpenTelemetry` package can subscribe the meter to an OpenTelemetry provider.
 
-### 9. OpenTelemetry Integration
+### 10. OpenTelemetry Integration
 
 Install the optional integration package:
 
@@ -420,7 +420,7 @@ The integration package does not add an exporter, make network calls, or enable 
 
 The package currently targets OpenTelemetry 1.19.1.
 
-### 10. Secure-by-Default HTTP Configuration
+### 11. Secure-by-Default HTTP Configuration
 
 The kit applies a deliberately small set of HTTP hardening defaults through `HttpSecurityOptions`.
 
@@ -456,7 +456,7 @@ The package does not automatically configure HSTS, HTTPS redirection, authentica
 
 Existing ProblemDetails behavior remains safe by default: exception details are not returned unless explicitly enabled for development, and development-only details are still suppressed outside the Development environment.
 
-### 11. Health and Diagnostics
+### 12. Health and Diagnostics
 
 The kit can integrate with the standard ASP.NET Core Health Checks infrastructure without adding external services.
 
