@@ -42,6 +42,18 @@ public sealed class HttpSecurityOptions
         "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
 
     /// <summary>
+    /// Gets or sets a value indicating whether Content-Security-Policy-Report-Only is added.
+    /// This allows applications to evaluate a policy before enforcing it.
+    /// </summary>
+    public bool EnableContentSecurityPolicyReportOnlyHeader { get; set; }
+
+    /// <summary>
+    /// Gets or sets the report-only Content Security Policy. The policy is not enforced by browsers.
+    /// </summary>
+    public string ContentSecurityPolicyReportOnly { get; set; } =
+        "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+
+    /// <summary>
     /// Gets or sets the maximum request body size in bytes. A null value leaves the server limit unchanged.
     /// </summary>
     public long? MaxRequestBodySize { get; set; }
@@ -71,6 +83,14 @@ public sealed class HttpSecurityOptions
                 ContentSecurityPolicy,
                 nameof(ContentSecurityPolicy),
                 "A Content-Security-Policy value is required when Content-Security-Policy is enabled.");
+        }
+
+        if (EnableContentSecurityPolicyReportOnlyHeader)
+        {
+            ValidateHeaderValue(
+                ContentSecurityPolicyReportOnly,
+                nameof(ContentSecurityPolicyReportOnly),
+                "A report-only Content-Security-Policy value is required when the report-only header is enabled.");
         }
 
         if (MaxRequestBodySize is <= 0)
