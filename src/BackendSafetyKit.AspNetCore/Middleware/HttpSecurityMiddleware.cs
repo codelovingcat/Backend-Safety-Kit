@@ -1,5 +1,6 @@
 using BackendSafetyKit;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Options;
 
@@ -16,8 +17,6 @@ internal sealed class HttpSecurityMiddleware(
         var securityOptions = options.Value.HttpSecurity;
         securityOptions.Validate();
 
-        ApplyRequestBodySizeLimit(context, securityOptions);
-
         context.Response.OnStarting(
             static state =>
             {
@@ -27,12 +26,49 @@ internal sealed class HttpSecurityMiddleware(
             },
             (context, securityOptions));
 
+        if (TryRedirectToHttps(context, securityOptions))
+        {
+            ApplySecurityHeaders(context, securityOptions);
+            return;
+        }
+
+        ApplyRequestBodySizeLimit(context, securityOptions);
+
         await next(context);
 
         if (!context.Response.HasStarted)
         {
             ApplySecurityHeaders(context, securityOptions);
         }
+    }
+
+    private static bool TryRedirectToHttps(
+        HttpContext context,
+        HttpSecurityOptions options)
+    {
+        if (!options.EnableHttpsRedirection ||
+            context.Request.IsHttps ||
+            string.IsNullOrWhiteSpace(context.Request.Host.Host))
+        {
+            return false;
+        }
+
+        var httpsHost = new HostString(
+            context.Request.Host.Host,
+            options.HttpsPort!.Value);
+        var location = UriHelper.BuildAbsolute(
+            "https",
+            httpsHost,
+            context.Request.PathBase,
+            context.Request.Path,
+            context.Request.QueryString);
+
+        context.Response.Redirect(
+            location,
+            permanent: options.HttpsRedirectStatusCode == 308,
+            preserveMethod: true);
+
+        return true;
     }
 
     private static void ApplyRequestBodySizeLimit(
@@ -89,6 +125,25 @@ internal sealed class HttpSecurityMiddleware(
             !headers.ContainsKey("Content-Security-Policy"))
         {
             headers["Content-Security-Policy"] = options.ContentSecurityPolicy;
+        }
+
+        if (options.EnableHsts &&
+            context.Request.IsHttps &&
+            !headers.ContainsKey("Strict-Transport-Security"))
+        {
+            var hstsValue = $"max-age={(long)options.HstsMaxAge.TotalSeconds}";
+
+            if (options.HstsIncludeSubDomains)
+            {
+                hstsValue += "; includeSubDomains";
+            }
+
+            if (options.HstsPreload)
+            {
+                hstsValue += "; preload";
+            }
+
+            headers["Strict-Transport-Security"] = hstsValue;
         }
     }
 }
