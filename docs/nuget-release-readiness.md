@@ -25,7 +25,7 @@ The validators use Python's standard library only. The consumer smoke test then 
 
 `scripts/generate_release_sbom.py` builds a CycloneDX 1.6 SBOM from each shipping package's actual `.nuspec` metadata and restored .NET 10 `project.assets.json` graph. It follows dependencies reachable from each package's declared NuGet dependencies, records SHA-256 checksums for every shipped `.nupkg`, checks all five package IDs and direct-dependency edges, and validates the document against the official CycloneDX 1.6 JSON Schema. Build-only packages that are not reachable from the shipped dependency declarations are not mislabeled as consumer dependencies.
 
-The SBOM workflow uploads `backend-safety-kit.sbom.json` and `SHA256SUMS.txt` as CI artifacts. On a protected release tag, the publishing workflow creates the same SBOM/checksum set and attests the files under `artifacts/` with GitHub build provenance. Ordinary pull requests and branch builds do not publish NuGet packages.
+The SBOM workflow uploads the five `.nupkg` files, five `.snupkg` files, `backend-safety-kit.sbom.json`, and `SHA256SUMS.txt` as CI artifacts. On a protected release tag, the publishing workflow uploads the same set and attests the files under `artifacts/` with GitHub build provenance. Ordinary pull requests and branch builds do not publish NuGet packages.
 
 After downloading the SBOM/checksum artifact and the package artifacts from the same release workflow run into one `artifacts/` directory, verify the hashes and attestations with Git Bash, Linux, or macOS:
 
