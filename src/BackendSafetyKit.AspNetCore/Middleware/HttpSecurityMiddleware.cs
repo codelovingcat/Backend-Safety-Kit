@@ -63,10 +63,8 @@ internal sealed class HttpSecurityMiddleware(
             context.Request.Path,
             context.Request.QueryString);
 
-        context.Response.Redirect(
-            location,
-            permanent: options.HttpsRedirectStatusCode == 308,
-            preserveMethod: true);
+        context.Response.StatusCode = options.HttpsRedirectStatusCode;
+        context.Response.Headers.Location = location;
 
         return true;
     }
