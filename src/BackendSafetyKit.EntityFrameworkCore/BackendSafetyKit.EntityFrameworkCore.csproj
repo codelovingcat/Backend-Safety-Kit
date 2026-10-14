@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>BackendSafetyKit.EntityFrameworkCore</PackageId>
+    <Title>Backend Safety Kit Entity Framework Core Integration</Title>
+    <Description>Optional Entity Framework Core SaveChanges diagnostics for Backend Safety Kit.</Description>
+    <PackageTags>backend;security;diagnostics;entity-framework-core;efcore;logging</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RepositoryUrl>https://github.com/codelovingcat/Backend-Safety-Kit</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/codelovingcat/Backend-Safety-Kit</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReleaseNotes>Pre-release build; see repository documentation for supported behavior and limitations.</PackageReleaseNotes>
+    <Version>0.1.0</Version>
+    <Authors>codelovingcat</Authors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.402" PrivateAssets="All">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
+    <ProjectReference Include="..\BackendSafetyKit\BackendSafetyKit.csproj" />
+    <None Include="$(MSBuildThisFileDirectory)..\..\README.md"
+          Pack="true"
+          PackagePath="README.md"
+          PackageReadmeFile="README.md" />
+  </ItemGroup>
+</Project>
