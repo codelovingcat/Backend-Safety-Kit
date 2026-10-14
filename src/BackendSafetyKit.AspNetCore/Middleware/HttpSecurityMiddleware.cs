@@ -78,6 +78,12 @@ internal sealed class HttpSecurityMiddleware(
             return;
         }
 
+        if (context.Request.ContentLength is long contentLength &&
+            contentLength > options.MaxRequestBodySize.Value)
+        {
+            return;
+        }
+
         var feature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
 
         if (feature is null)
@@ -123,6 +129,13 @@ internal sealed class HttpSecurityMiddleware(
             !headers.ContainsKey("Content-Security-Policy"))
         {
             headers["Content-Security-Policy"] = options.ContentSecurityPolicy;
+        }
+
+        if (options.EnableContentSecurityPolicyReportOnlyHeader &&
+            !headers.ContainsKey("Content-Security-Policy-Report-Only"))
+        {
+            headers["Content-Security-Policy-Report-Only"] =
+                options.ContentSecurityPolicyReportOnly;
         }
 
         if (options.EnableHsts &&

@@ -109,6 +109,98 @@ public sealed class HttpSecurityMiddlewareTests
     }
 
     [Fact]
+    public async Task ContentSecurityPolicyReportOnlyCanBeEnabledIndependently()
+    {
+        var services = CreateServices(options =>
+        {
+            options.HttpSecurity.EnableContentSecurityPolicyReportOnlyHeader = true;
+            options.HttpSecurity.ContentSecurityPolicyReportOnly =
+                "default-src 'self'; object-src 'none'; frame-ancestors 'none'";
+        });
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        await app(context);
+
+        Assert.Equal(
+            "default-src 'self'; object-src 'none'; frame-ancestors 'none'",
+            context.Response.Headers["Content-Security-Policy-Report-Only"].ToString());
+        Assert.False(context.Response.Headers.ContainsKey("Content-Security-Policy"));
+    }
+
+    [Fact]
+    public async Task ExistingContentSecurityPolicyReportOnlyHeaderIsPreserved()
+    {
+        var services = CreateServices(options =>
+            options.HttpSecurity.EnableContentSecurityPolicyReportOnlyHeader = true);
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.Headers["Content-Security-Policy-Report-Only"] =
+                    "default-src 'none'";
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        await app(context);
+
+        Assert.Equal(
+            "default-src 'none'",
+            context.Response.Headers["Content-Security-Policy-Report-Only"].ToString());
+    }
+
+    [Fact]
+    public void InvalidReportOnlyContentSecurityPolicyHeaderFailsValidation()
+    {
+        var services = CreateServices(options =>
+        {
+            options.HttpSecurity.EnableContentSecurityPolicyReportOnlyHeader = true;
+            options.HttpSecurity.ContentSecurityPolicyReportOnly = "default-src 'self'\r\nX-Injected: yes";
+        });
+
+        var exception = Assert.Throws<OptionsValidationException>(
+            () => BuildPipeline(services, context => Task.CompletedTask));
+
+        Assert.Contains("ContentSecurityPolicyReportOnly", exception.Message);
+        Assert.Contains("carriage return or line feed", exception.Message);
+    }
+
+    [Fact]
+    public async Task EnforcedAndReportOnlyContentSecurityPoliciesCanBeConfiguredTogether()
+    {
+        var services = CreateServices(options =>
+        {
+            options.HttpSecurity.EnableContentSecurityPolicyHeader = true;
+            options.HttpSecurity.ContentSecurityPolicy = "default-src 'self'";
+            options.HttpSecurity.EnableContentSecurityPolicyReportOnlyHeader = true;
+            options.HttpSecurity.ContentSecurityPolicyReportOnly = "default-src 'self'; img-src 'self' data:";
+        });
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        await app(context);
+
+        Assert.Equal("default-src 'self'", context.Response.Headers["Content-Security-Policy"].ToString());
+        Assert.Equal(
+            "default-src 'self'; img-src 'self' data:",
+            context.Response.Headers["Content-Security-Policy-Report-Only"].ToString());
+    }
+
+    [Fact]
     public async Task ConfiguredRequestBodySizeIsAppliedToServerFeature()
     {
         var services = CreateServices(options =>
@@ -185,6 +277,84 @@ public sealed class HttpSecurityMiddlewareTests
 
         Assert.Contains("HttpSecurity", exception.Message);
         Assert.Contains("carriage return or line feed", exception.Message);
+    }
+
+    [Fact]
+    public async Task DeclaredRequestBodyAboveLimitReturns413WithoutCallingApplication()
+    {
+        var services = CreateServices(options =>
+            options.HttpSecurity.MaxRequestBodySize = 4096);
+        var appCalled = false;
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                appCalled = true;
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentLength = 4097;
+
+        await app(context);
+
+        Assert.False(appCalled);
+        Assert.Equal(StatusCodes.Status413PayloadTooLarge, context.Response.StatusCode);
+        Assert.Equal("nosniff", context.Response.Headers["X-Content-Type-Options"].ToString());
+    }
+
+    [Fact]
+    public async Task DeclaredRequestBodyAtLimitIsAllowedAndServerLimitIsApplied()
+    {
+        var services = CreateServices(options =>
+            options.HttpSecurity.MaxRequestBodySize = 4096);
+        var appCalled = false;
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                appCalled = true;
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentLength = 4096;
+        var feature = new TestMaxRequestBodySizeFeature();
+        context.Features.Set<IHttpMaxRequestBodySizeFeature>(feature);
+
+        await app(context);
+
+        Assert.True(appCalled);
+        Assert.Equal(StatusCodes.Status204NoContent, context.Response.StatusCode);
+        Assert.Equal(4096, feature.MaxRequestBodySize);
+    }
+
+    [Fact]
+    public async Task DeclaredLargeRequestIsNotRejectedWhenNoSizeLimitIsConfigured()
+    {
+        var services = CreateServices();
+        var appCalled = false;
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                appCalled = true;
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentLength = 100_000_000;
+
+        await app(context);
+
+        Assert.True(appCalled);
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
     }
 
     [Fact]
