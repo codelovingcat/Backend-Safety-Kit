@@ -638,6 +638,8 @@ When convenience and security conflict, the secure behavior wins unless the cons
 
 ## Public API Design
 
+The manually reviewed public surface and compatibility rules are tracked in [docs/public-api-review.md](docs/public-api-review.md).
+
 Public APIs should be:
 
 - Small
