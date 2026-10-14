@@ -64,7 +64,7 @@ internal sealed class HttpSecurityMiddleware(
             context.Request.QueryString);
 
         context.Response.StatusCode = options.HttpsRedirectStatusCode;
-        context.Response.Headers.Location = location;
+        context.Response.Headers["Location"] = location;
 
         return true;
     }
