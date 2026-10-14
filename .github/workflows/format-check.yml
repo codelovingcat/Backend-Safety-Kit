@@ -1,0 +1,41 @@
+name: Formatting check
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore BackendSafetyKit.slnx
+
+      - name: Verify changed C# files are formatted
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          files="$(git diff --name-only "$BASE_SHA"...HEAD -- '*.cs')"
+          if [[ -z "$files" ]]; then
+            echo "No changed C# files; formatting check is not applicable."
+            exit 0
+          fi
+
+          mapfile -t paths <<< "$files"
+          dotnet format whitespace BackendSafetyKit.slnx             --verify-no-changes             --no-restore             --include "${paths[@]}"             --verbosity diagnostic
