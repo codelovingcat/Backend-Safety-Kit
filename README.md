@@ -399,6 +399,19 @@ The default behavior is intentionally conservative:
 - `X-Frame-Options`, `Referrer-Policy`, and `Content-Security-Policy` are disabled by default because they can affect legitimate browser-facing applications.
 - Existing response headers are preserved and are never overwritten by the package.
 
+Content Security Policy can be enabled in **report-only** mode before enforcement. Report-only policies let browsers report violations without blocking resources, which makes them useful while learning which scripts, styles, images, and connections an application actually needs:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.HttpSecurity.EnableContentSecurityPolicyReportOnlyHeader = true;
+    options.HttpSecurity.ContentSecurityPolicyReportOnly =
+        "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+});
+```
+
+The package does not collect CSP reports or configure a reporting endpoint. Add your own `report-to` or `report-uri` directive only after selecting and securing a reporting endpoint. Once the policy is verified against real application behavior, consider enabling `Content-Security-Policy` enforcement separately. The enforcing and report-only headers can coexist during staged policy rollout. Both remain disabled by default, and application-supplied headers take precedence.
+
 Example:
 
 ```csharp
