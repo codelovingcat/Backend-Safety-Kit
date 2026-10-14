@@ -187,6 +187,84 @@ public sealed class HttpSecurityMiddlewareTests
         Assert.Contains("carriage return or line feed", exception.Message);
     }
 
+    [Fact]
+    public async Task DeclaredRequestBodyAboveLimitReturns413WithoutCallingApplication()
+    {
+        var services = CreateServices(options =>
+            options.HttpSecurity.MaxRequestBodySize = 4096);
+        var appCalled = false;
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                appCalled = true;
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentLength = 4097;
+
+        await app(context);
+
+        Assert.False(appCalled);
+        Assert.Equal(StatusCodes.Status413PayloadTooLarge, context.Response.StatusCode);
+        Assert.Equal("nosniff", context.Response.Headers["X-Content-Type-Options"].ToString());
+    }
+
+    [Fact]
+    public async Task DeclaredRequestBodyAtLimitIsAllowedAndServerLimitIsApplied()
+    {
+        var services = CreateServices(options =>
+            options.HttpSecurity.MaxRequestBodySize = 4096);
+        var appCalled = false;
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                appCalled = true;
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentLength = 4096;
+        var feature = new TestMaxRequestBodySizeFeature();
+        context.Features.Set<IHttpMaxRequestBodySizeFeature>(feature);
+
+        await app(context);
+
+        Assert.True(appCalled);
+        Assert.Equal(StatusCodes.Status204NoContent, context.Response.StatusCode);
+        Assert.Equal(4096, feature.MaxRequestBodySize);
+    }
+
+    [Fact]
+    public async Task DeclaredLargeRequestIsNotRejectedWhenNoSizeLimitIsConfigured()
+    {
+        var services = CreateServices();
+        var appCalled = false;
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                appCalled = true;
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentLength = 100_000_000;
+
+        await app(context);
+
+        Assert.True(appCalled);
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+    }
+
     private static ServiceCollection CreateServices(
         Action<BackendSafetyOptions>? configure = null)
     {

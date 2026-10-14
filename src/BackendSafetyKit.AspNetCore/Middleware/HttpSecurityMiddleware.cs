@@ -44,6 +44,12 @@ internal sealed class HttpSecurityMiddleware(
             return;
         }
 
+        if (context.Request.ContentLength is long contentLength &&
+            contentLength > options.MaxRequestBodySize.Value)
+        {
+            return;
+        }
+
         var feature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
 
         if (feature is null)

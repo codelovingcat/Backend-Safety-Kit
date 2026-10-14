@@ -47,6 +47,7 @@ public static class BackendSafetyApplicationBuilderExtensions
         if (features.EnableHttpSecurity)
         {
             app.UseMiddleware<HttpSecurityMiddleware>();
+            app.UseMiddleware<RequestSizePolicyMiddleware>();
         }
 
         if (features.EnableExceptionHandling)
