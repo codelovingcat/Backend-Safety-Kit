@@ -9,6 +9,7 @@
     <Project Path="tests/BackendSafetyKit.Tests/BackendSafetyKit.Tests.csproj" />
     <Project Path="tests/BackendSafetyKit.AspNetCore.Tests/BackendSafetyKit.AspNetCore.Tests.csproj" />
     <Project Path="tests/BackendSafetyKit.OpenTelemetry.Tests/BackendSafetyKit.OpenTelemetry.Tests.csproj" />
+    <Project Path="tests/BackendSafetyKit.Redis.Tests/BackendSafetyKit.Redis.Tests.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/BackendSafetyKit.SampleApi/BackendSafetyKit.SampleApi.csproj" />
