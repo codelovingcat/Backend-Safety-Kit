@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/BackendSafetyKit/BackendSafetyKit.csproj" />
     <Project Path="src/BackendSafetyKit.AspNetCore/BackendSafetyKit.AspNetCore.csproj" />
+    <Project Path="src/BackendSafetyKit.Redis/BackendSafetyKit.Redis.csproj" />
     <Project Path="src/BackendSafetyKit.OpenTelemetry/BackendSafetyKit.OpenTelemetry.csproj" />
   </Folder>
   <Folder Name="/tests/">
