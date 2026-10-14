@@ -10,6 +10,7 @@ dotnet add package BackendSafetyKit.AspNetCore
 
 ```csharp
 using BackendSafetyKit.AspNetCore.DependencyInjection;
+using BackendSafetyKit.AspNetCore.Health;
 
 var builder = WebApplication.CreateBuilder(args);
 
