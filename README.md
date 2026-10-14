@@ -542,6 +542,44 @@ This ordering is a compatibility contract:
 
 Regression tests cover these relationships together so future middleware changes cannot silently reorder the safety boundaries.
 
+## Reverse Proxy and Forwarded-Header Security
+
+Backend Safety Kit does not enable or trust forwarded headers automatically. A reverse proxy can affect the apparent request scheme and client address, so configure ASP.NET Core's forwarded-header middleware explicitly and trust only the proxy addresses or networks that you control.
+
+Configure the selected headers and trusted proxy before building the app:
+
+```csharp
+using System.Net;
+using Microsoft.AspNetCore.HttpOverrides;
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+
+    // Replace this example with the address of your actual trusted proxy.
+    options.KnownProxies.Add(IPAddress.Parse("10.0.0.10"));
+    options.ForwardLimit = 1;
+});
+
+var app = builder.Build();
+
+// Must run before middleware that uses Request.Scheme or RemoteIpAddress.
+app.UseForwardedHeaders();
+app.UseBackendSafety();
+```
+
+Security rules:
+
+- Configure `KnownProxies` or `KnownNetworks` for your actual deployment topology; the example address is illustrative.
+- Do not clear the trusted-proxy lists or accept forwarded headers from arbitrary internet clients just to make the headers work.
+- Enable only the forwarded headers the proxy is expected to set. If you need `X-Forwarded-Host`, validate allowed hosts and configure it deliberately.
+- Place `UseForwardedHeaders()` before `UseBackendSafety()` and any other middleware that depends on the scheme, client IP, HTTPS redirection, or generated absolute URLs.
+- When a proxy chain exists, set `ForwardLimit` to the intended number of trusted hops and define trust for each hop. Do not treat the rightmost or leftmost address as trustworthy without validating the chain.
+
+The library intentionally leaves proxy trust to the host application. It does not rewrite forwarded headers, infer trusted proxy addresses, or make network calls.
+
 ## Options Lifecycle and Service Lifetimes
 
 Backend Safety Kit treats application options as startup configuration. Configure the options while registering the services and treat them as immutable after the application starts.
