@@ -54,6 +54,45 @@ public sealed class HttpSecurityOptions
         "default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
 
     /// <summary>
+    /// Gets or sets a value indicating whether HTTP requests are redirected to HTTPS.
+    /// Disabled by default because HTTPS ports and proxy topology belong to the host application.
+    /// </summary>
+    public bool EnableHttpsRedirection { get; set; }
+
+    /// <summary>
+    /// Gets or sets the HTTPS port used for redirects. Required when HTTPS redirection is enabled.
+    /// </summary>
+    public int? HttpsPort { get; set; }
+
+    /// <summary>
+    /// Gets or sets the status code used for HTTPS redirects. Only 307 and 308 are supported
+    /// so the original HTTP method and body semantics are preserved.
+    /// </summary>
+    public int HttpsRedirectStatusCode { get; set; } = 307;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the Strict-Transport-Security header is added
+    /// to HTTPS responses. Disabled by default.
+    /// </summary>
+    public bool EnableHsts { get; set; }
+
+    /// <summary>
+    /// Gets or sets the HSTS max-age duration. Defaults to one year.
+    /// </summary>
+    public TimeSpan HstsMaxAge { get; set; } = TimeSpan.FromDays(365);
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the HSTS policy applies to all subdomains.
+    /// </summary>
+    public bool HstsIncludeSubDomains { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the HSTS policy includes the preload directive.
+    /// Preload requires includeSubDomains and a max-age of at least one year.
+    /// </summary>
+    public bool HstsPreload { get; set; }
+
+    /// <summary>
     /// Gets or sets the maximum request body size in bytes. A null value leaves the server limit unchanged.
     /// </summary>
     public long? MaxRequestBodySize { get; set; }
@@ -100,6 +139,45 @@ public sealed class HttpSecurityOptions
                 MaxRequestBodySize,
                 "The maximum request body size must be greater than zero.");
         }
+        if (EnableHttpsRedirection)
+        {
+            if (HttpsPort is null or < 1 or > 65535)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(HttpsPort),
+                    HttpsPort,
+                    "HttpsPort must be between 1 and 65535 when HTTPS redirection is enabled.");
+            }
+
+            if (HttpsRedirectStatusCode is not 307 and not 308)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(HttpsRedirectStatusCode),
+                    HttpsRedirectStatusCode,
+                    "HTTPS redirects must use status code 307 or 308 to preserve request semantics.");
+            }
+        }
+
+        if (EnableHsts)
+        {
+            if (HstsMaxAge < TimeSpan.FromSeconds(1) ||
+                HstsMaxAge > TimeSpan.FromDays(3650))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(HstsMaxAge),
+                    HstsMaxAge,
+                    "HSTS max-age must be between one second and ten years.");
+            }
+
+            if (HstsPreload &&
+                (!HstsIncludeSubDomains || HstsMaxAge < TimeSpan.FromDays(365)))
+            {
+                throw new ArgumentException(
+                    "HSTS preload requires includeSubDomains and a max-age of at least one year.",
+                    nameof(HstsPreload));
+            }
+        }
+
     }
 
     private static void ValidateHeaderValue(

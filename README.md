@@ -469,7 +469,25 @@ A configured request body limit is applied through ASP.NET Core's `IHttpMaxReque
 
 When a configured limit is exceeded by a declared `Content-Length`, the middleware returns `413 Payload Too Large` before invoking the application endpoint. Requests with an unknown/chunked length are still constrained by the server-level body-size feature as the body is read. A null limit leaves both checks unchanged; size enforcement is not inferred from a global default.
 
-The package does not automatically configure HSTS, HTTPS redirection, authentication, authorization, CORS, cookies, or reverse-proxy trust. Those behaviors depend on the host application's deployment and security architecture.
+HTTPS redirection and HSTS are available as explicit opt-ins. They remain disabled by default because the HTTPS port and proxy topology are properties of the host deployment:
+
+```csharp
+builder.Services.AddBackendSafety(options =>
+{
+    options.HttpSecurity.EnableHttpsRedirection = true;
+    options.HttpSecurity.HttpsPort = 443;
+
+    options.HttpSecurity.EnableHsts = true;
+    options.HttpSecurity.HstsMaxAge = TimeSpan.FromDays(365);
+    options.HttpSecurity.HstsIncludeSubDomains = true;
+    // Enable preload only when every subdomain is HTTPS-ready and the domain is eligible.
+    options.HttpSecurity.HstsPreload = false;
+});
+```
+
+HTTPS redirects use a method-preserving 307 response by default (308 can be selected explicitly), and require a valid configured HTTPS port. HSTS is emitted only on HTTPS responses, preserves an application-supplied Strict-Transport-Security header, and validates preload requirements. When TLS terminates at a reverse proxy, configure trusted forwarded headers **before** `UseBackendSafety()`; otherwise the application may see the original request as HTTP and produce redirect loops. Do not trust forwarded headers from arbitrary clients.
+
+The package does not configure authentication, authorization, CORS, cookies, or proxy trust. Those behaviors depend on the host application's deployment and security architecture.
 
 Existing ProblemDetails behavior remains safe by default: exception details are not returned unless explicitly enabled for development, and development-only details are still suppressed outside the Development environment.
 

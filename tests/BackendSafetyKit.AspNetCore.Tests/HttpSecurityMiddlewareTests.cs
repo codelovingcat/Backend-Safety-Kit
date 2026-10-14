@@ -357,6 +357,181 @@ public sealed class HttpSecurityMiddlewareTests
         Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
     }
 
+    [Fact]
+    public async Task HttpsRedirectionIsDisabledByDefault()
+    {
+        var services = CreateServices();
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Scheme = "http";
+        context.Request.Host = new HostString("api.example.test", 8080);
+
+        await app(context);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        Assert.False(context.Response.Headers.ContainsKey("Location"));
+        Assert.False(context.Response.Headers.ContainsKey("Strict-Transport-Security"));
+    }
+
+    [Fact]
+    public async Task HttpsRedirectionUsesConfiguredPortAndPreservesPathAndQuery()
+    {
+        var services = CreateServices(options =>
+        {
+            options.HttpSecurity.EnableHttpsRedirection = true;
+            options.HttpSecurity.HttpsPort = 8443;
+        });
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Scheme = "http";
+        context.Request.Host = new HostString("api.example.test", 8080);
+        context.Request.PathBase = "/base";
+        context.Request.Path = "/resource";
+        context.Request.QueryString = new QueryString("?return=%2Fhome");
+
+        await app(context);
+
+        Assert.Equal(StatusCodes.Status307TemporaryRedirect, context.Response.StatusCode);
+        Assert.Equal(
+            "https://api.example.test:8443/base/resource?return=%2Fhome",
+            context.Response.Headers["Location"].ToString());
+        Assert.Equal("nosniff", context.Response.Headers["X-Content-Type-Options"].ToString());
+    }
+
+    [Fact]
+    public async Task HttpsRedirectionUsesPermanentMethodPreservingStatusWhenConfigured()
+    {
+        var services = CreateServices(options =>
+        {
+            options.HttpSecurity.EnableHttpsRedirection = true;
+            options.HttpSecurity.HttpsPort = 443;
+            options.HttpSecurity.HttpsRedirectStatusCode = 308;
+        });
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Scheme = "http";
+        context.Request.Host = new HostString("api.example.test");
+
+        await app(context);
+
+        Assert.Equal(308, context.Response.StatusCode);
+        Assert.Equal("https://api.example.test:443/", context.Response.Headers["Location"].ToString());
+    }
+
+    [Fact]
+    public async Task HstsIsAddedOnlyToHttpsResponses()
+    {
+        var services = CreateServices(options =>
+        {
+            options.HttpSecurity.EnableHsts = true;
+            options.HttpSecurity.HstsIncludeSubDomains = true;
+            options.HttpSecurity.HstsPreload = true;
+        });
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var httpContext = CreateContext();
+        httpContext.Request.Scheme = "http";
+        httpContext.Request.Host = new HostString("api.example.test");
+
+        await app(httpContext);
+
+        Assert.False(httpContext.Response.Headers.ContainsKey("Strict-Transport-Security"));
+
+        var httpsContext = CreateContext();
+        httpsContext.Request.Scheme = "https";
+        httpsContext.Request.Host = new HostString("api.example.test");
+
+        await app(httpsContext);
+
+        Assert.Equal(
+            "max-age=31536000; includeSubDomains; preload",
+            httpsContext.Response.Headers["Strict-Transport-Security"].ToString());
+    }
+
+    [Fact]
+    public async Task ExistingHstsHeaderIsPreserved()
+    {
+        var services = CreateServices(options =>
+        {
+            options.HttpSecurity.EnableHsts = true;
+            options.HttpSecurity.HstsMaxAge = TimeSpan.FromDays(365);
+        });
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.Headers["Strict-Transport-Security"] = "max-age=10";
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.Scheme = "https";
+        context.Request.Host = new HostString("api.example.test");
+
+        await app(context);
+
+        Assert.Equal("max-age=10", context.Response.Headers["Strict-Transport-Security"].ToString());
+    }
+
+    [Fact]
+    public void HttpsRedirectionRequiresAnExplicitValidPort()
+    {
+        var services = CreateServices(options =>
+        {
+            options.HttpSecurity.EnableHttpsRedirection = true;
+            options.HttpSecurity.HttpsPort = null;
+        });
+
+        var exception = Assert.Throws<OptionsValidationException>(
+            () => BuildPipeline(services, _ => Task.CompletedTask));
+
+        Assert.Contains("HttpsPort", exception.Message);
+    }
+
+    [Fact]
+    public void HstsPreloadRequiresSubdomainsAndAtLeastOneYear()
+    {
+        var services = CreateServices(options =>
+        {
+            options.HttpSecurity.EnableHsts = true;
+            options.HttpSecurity.HstsPreload = true;
+            options.HttpSecurity.HstsIncludeSubDomains = false;
+        });
+
+        var exception = Assert.Throws<OptionsValidationException>(
+            () => BuildPipeline(services, _ => Task.CompletedTask));
+
+        Assert.Contains("HSTS preload requires includeSubDomains", exception.Message);
+    }
+
     private static ServiceCollection CreateServices(
         Action<BackendSafetyOptions>? configure = null)
     {
