@@ -1,4 +1,4 @@
-using BackendSafetyKit.Abstractions;
+﻿using BackendSafetyKit.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
 namespace BackendSafetyKit.EntityFrameworkCore;
