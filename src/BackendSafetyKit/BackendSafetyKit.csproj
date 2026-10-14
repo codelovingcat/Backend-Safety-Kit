@@ -9,7 +9,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/codelovingcat/Backend-Safety-Kit</PackageProjectUrl>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReleaseNotes>Pre-release build; see the repository README and release page for current features and limitations.</PackageReleaseNotes>
     <Version>0.1.0</Version>
     <Authors>codelovingcat</Authors>
@@ -26,8 +26,5 @@
           Pack="true"
           PackagePath="README.md"
           PackageReadmeFile="README.md" />
-    <None Include="$(MSBuildThisFileDirectory)..\..\LICENSE"
-          Pack="true"
-          PackagePath="LICENSE" />
   </ItemGroup>
 </Project>

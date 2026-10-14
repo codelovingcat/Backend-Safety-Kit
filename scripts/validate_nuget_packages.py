@@ -70,7 +70,6 @@ def validate_main_package(path: Path) -> tuple[str, str]:
             fail(f"{path.name} contains unexpected package ID {package_id!r}")
         required = {
             "README.md",
-            "LICENSE",
             f"lib/net10.0/{package_id}.dll",
             f"lib/net10.0/{package_id}.xml",
         }
@@ -85,10 +84,10 @@ def validate_main_package(path: Path) -> tuple[str, str]:
         license_node = child(metadata, "license")
         if (
             license_node is None
-            or license_node.attrib.get("type") != "file"
-            or (license_node.text or "").strip() != "LICENSE"
+            or license_node.attrib.get("type") != "expression"
+            or (license_node.text or "").strip() != "MIT"
         ):
-            fail(f"{path.name} must declare LICENSE as its package license file")
+            fail(f"{path.name} must declare the MIT license expression")
 
         repository = child(metadata, "repository")
         if repository is None or repository.attrib.get("type") != "git":
