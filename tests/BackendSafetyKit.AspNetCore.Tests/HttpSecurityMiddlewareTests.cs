@@ -266,7 +266,7 @@ public sealed class HttpSecurityMiddlewareTests
         await app(context);
 
         Assert.Equal(308, context.Response.StatusCode);
-        Assert.Equal("https://api.example.test/", context.Response.Headers["Location"].ToString());
+        Assert.Equal("https://api.example.test:443/", context.Response.Headers["Location"].ToString());
     }
 
     [Fact]
