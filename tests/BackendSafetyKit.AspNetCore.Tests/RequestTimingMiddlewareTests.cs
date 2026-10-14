@@ -178,7 +178,7 @@ public sealed class RequestTimingMiddlewareTests
             });
 
         var context = CreateContext();
-        context.Request.QueryString = "?apiKey=query-secret";
+        context.Request.QueryString = new QueryString("?apiKey=query-secret");
         context.Request.Headers["X-Correlation-ID"] = "correlation-secret";
         context.Request.Headers.Authorization = "Bearer header-secret";
 
