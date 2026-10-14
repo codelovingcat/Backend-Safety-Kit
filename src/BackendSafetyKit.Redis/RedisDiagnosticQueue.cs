@@ -1,4 +1,4 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using BackendSafetyKit;
 
 namespace BackendSafetyKit.Redis;
