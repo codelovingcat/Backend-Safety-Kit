@@ -10,8 +10,8 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/codelovingcat/Backend-Safety-Kit</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReleaseNotes>Pre-release build; see the repository README and release page for current features and limitations.</PackageReleaseNotes>
-    <Version>0.1.0</Version>
+    <PackageReleaseNotes>First preview (0.1.0-preview.1) of Backend Safety Kit ASP.NET Core middleware and service integrations. Prerelease, not a stable release. Review the repository README and documentation for capabilities and limitations.</PackageReleaseNotes>
+    <Version>0.1.0-preview.1</Version>
     <Authors>codelovingcat</Authors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
