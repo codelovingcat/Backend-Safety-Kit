@@ -1,3 +1,4 @@
+using System.Globalization;
 using BackendSafetyKit.AspNetCore.Correlation;
 using BackendSafetyKit.AspNetCore.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
@@ -52,7 +53,7 @@ public sealed class MiddlewareConcurrencyStressTests
                 context.Request.Method = HttpMethods.Get;
                 context.Request.Path = $"/stress/{index}";
                 context.Request.Headers["X-Correlation-ID"] = expectedCorrelationId;
-                context.Request.Headers["X-Expected-Status"] = expectedStatus.ToString();
+                context.Request.Headers["X-Expected-Status"] = expectedStatus.ToString(CultureInfo.InvariantCulture);
 
                 await pipeline(context);
 
