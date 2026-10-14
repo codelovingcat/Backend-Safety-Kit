@@ -23,7 +23,14 @@ SEMVER = re.compile(
 
 
 def child_text(root: ElementTree.Element, name: str) -> str:
-    child = next((item for item in root if item.tag.rsplit("}", 1)[-1] == name), None)
+    child = next(
+        (
+            item
+            for item in root.iter()
+            if item is not root and item.tag.rsplit("}", 1)[-1] == name
+        ),
+        None,
+    )
     return (child.text or "").strip() if child is not None else ""
 
 
