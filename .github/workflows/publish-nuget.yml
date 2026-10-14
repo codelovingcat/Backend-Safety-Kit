@@ -39,9 +39,16 @@ jobs:
           fi
           version="${VERSION_TAG#v}"
           python - "$version" <<'PY'
+          import re
           import sys
           import xml.etree.ElementTree as ET
-          from pathlib import Path
+
+          semver = re.compile(
+              r"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)"
+              r"(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
+              r"(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?"
+              r"(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+          )
 
           expected = {
               "BackendSafetyKit": "src/BackendSafetyKit/BackendSafetyKit.csproj",
@@ -49,6 +56,8 @@ jobs:
               "BackendSafetyKit.OpenTelemetry": "src/BackendSafetyKit.OpenTelemetry/BackendSafetyKit.OpenTelemetry.csproj",
           }
           version = sys.argv[1]
+          if not semver.fullmatch(version):
+              raise SystemExit(f"Release version {version!r} is not valid SemVer 2.0.0")
           for package_id, name in expected.items():
               root = ET.parse(name).getroot()
               values = {
