@@ -1,6 +1,6 @@
 # Semantic Versioning and Release Policy
 
-All shipping packages are released together and must have the same version. The package IDs are BackendSafetyKit, BackendSafetyKit.AspNetCore, and BackendSafetyKit.OpenTelemetry. A release tag uses the matching vMAJOR.MINOR.PATCH format, with optional SemVer prerelease or build metadata.
+All shipping package projects included in the solution's release set are versioned together and must have the same version. The foundational package IDs are BackendSafetyKit, BackendSafetyKit.AspNetCore, and BackendSafetyKit.OpenTelemetry; optional provider packages such as BackendSafetyKit.Redis and BackendSafetyKit.EntityFrameworkCore remain separate dependencies. The authoritative project/package set is maintained in `scripts/check_package_versions.py` and `scripts/validate_nuget_packages.py`. A release tag uses the matching vMAJOR.MINOR.PATCH format, with optional SemVer prerelease or build metadata.
 
 The repository uses Semantic Versioning 2.0.0:
 
