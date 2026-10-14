@@ -21,6 +21,8 @@ These concerns are important, but they should not force every development team t
 
 Backend Safety Kit packages those concerns into a reusable layer while staying out of business logic.
 
+Security architecture and private vulnerability-reporting guidance are documented in [SECURITY.md](SECURITY.md).
+
 ## Intended Developer Experience
 
 The common case should be close to this:
