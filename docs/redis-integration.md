@@ -47,4 +47,4 @@ Only put operational metadata in diagnostic events. Do not include credentials, 
 
 ## Tests
 
-The package has isolated tests for dependency registration and invalid options. They do not require a live Redis server. Run the full solution tests and package validator before publishing.
+The test suite includes a bounded-queue overflow check that runs without external services, plus service-backed integration tests for Redis Stream delivery, approximate max-length trimming, graceful host shutdown, and Redis-unavailable write handling. The service-backed tests run when `REDIS_CONNECTION` is set; the repository CI job provisions an ephemeral Redis service and sets this variable automatically. For local service-backed tests, start a disposable Redis instance and set `REDIS_CONNECTION` to its connection string before running `dotnet test BackendSafetyKit.slnx`.
