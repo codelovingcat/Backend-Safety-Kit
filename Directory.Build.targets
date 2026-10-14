@@ -2,6 +2,7 @@
   <PropertyGroup Condition="'$(IsPackable)' == 'true' and '$(PackageId)' != ''">
     <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <RepositoryCommit Condition="'$(RepositoryCommit)' == '' and '$(GITHUB_SHA)' != ''">$(GITHUB_SHA)</RepositoryCommit>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
