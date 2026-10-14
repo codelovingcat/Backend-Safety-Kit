@@ -41,7 +41,9 @@ public sealed class ForwardedHeadersSecurityTests
         });
         services.Configure<ForwardedHeadersOptions>(options =>
         {
-            options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor |
+                ForwardedHeaders.XForwardedProto;
             options.ForwardLimit = 1;
         });
 
@@ -62,6 +64,7 @@ public sealed class ForwardedHeadersSecurityTests
         context.Connection.RemoteIpAddress = remoteAddress;
         context.Request.Scheme = "http";
         context.Request.Host = new HostString("api.example.test");
+        context.Request.Headers["X-Forwarded-For"] = "198.51.100.25";
         context.Request.Headers["X-Forwarded-Proto"] = "https";
 
         await app(context);
