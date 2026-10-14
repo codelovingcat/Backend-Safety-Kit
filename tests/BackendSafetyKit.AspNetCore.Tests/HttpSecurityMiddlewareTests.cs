@@ -163,7 +163,7 @@ public sealed class HttpSecurityMiddlewareTests
         var services = CreateServices(options =>
         {
             options.HttpSecurity.EnableContentSecurityPolicyReportOnlyHeader = true;
-            options.HttpSecurity.ContentSecurityPolicyReportOnly = "default-src 'self'\\r\\nX-Injected: yes";
+            options.HttpSecurity.ContentSecurityPolicyReportOnly = "default-src 'self'\r\nX-Injected: yes";
         });
 
         var exception = Assert.Throws<OptionsValidationException>(
