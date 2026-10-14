@@ -41,4 +41,4 @@ The event does not include entity values, SQL text, command parameters, connecti
 - It does not implement retries, transaction management, auditing of entity changes, data masking before persistence, migrations, or a database health check.
 - Applications remain responsible for database credentials, provider configuration, access control, and diagnostics retention.
 
-The tests use EF Core's in-memory provider and do not require a database server. Run the full solution test suite and package validator before publishing.
+The SaveChanges interceptor tests use an in-memory SQLite relational database. They cover synchronous and asynchronous success/failure events and verify that entity values, SQL, provider error messages, and connection strings are not included in diagnostics. They also verify that a throwing diagnostic sink cannot change the underlying save outcome. No external database server is required. Run the full solution test suite and package validator before publishing.
