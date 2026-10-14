@@ -265,7 +265,7 @@ public sealed class HttpSecurityMiddlewareTests
 
         await app(context);
 
-        Assert.Equal(StatusCodes.StatusPermanentRedirect, context.Response.StatusCode);
+        Assert.Equal(308, context.Response.StatusCode);
         Assert.Equal("https://api.example.test/", context.Response.Headers["Location"].ToString());
     }
 
