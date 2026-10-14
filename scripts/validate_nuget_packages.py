@@ -16,6 +16,7 @@ EXPECTED = {
         "BackendSafetyKit",
         "OpenTelemetry.Api.ProviderBuilderExtensions",
     },
+    "BackendSafetyKit.EntityFrameworkCore": {"BackendSafetyKit", "Microsoft.EntityFrameworkCore"},
 }
 
 

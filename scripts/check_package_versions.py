@@ -14,6 +14,7 @@ PROJECTS = {
     "BackendSafetyKit.Redis": "src/BackendSafetyKit.Redis/BackendSafetyKit.Redis.csproj",
     "BackendSafetyKit.AspNetCore": "src/BackendSafetyKit.AspNetCore/BackendSafetyKit.AspNetCore.csproj",
     "BackendSafetyKit.OpenTelemetry": "src/BackendSafetyKit.OpenTelemetry/BackendSafetyKit.OpenTelemetry.csproj",
+    "BackendSafetyKit.EntityFrameworkCore": "src/BackendSafetyKit.EntityFrameworkCore/BackendSafetyKit.EntityFrameworkCore.csproj",
 }
 IDENTIFIER = r"(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
 SEMVER = re.compile(
