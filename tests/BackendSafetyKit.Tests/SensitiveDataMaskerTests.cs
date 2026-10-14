@@ -169,6 +169,46 @@ public sealed class SensitiveDataMaskerTests
     }
 
     [Fact]
+    public void MaskReturnsNullForNullInput()
+    {
+        var masker = new SensitiveDataMasker(new SensitiveDataMaskingOptions());
+
+        Assert.Null(masker.Mask(null));
+    }
+
+    [Fact]
+    public void MaskReturnsUnmatchedStringInstanceUnchanged()
+    {
+        var masker = new SensitiveDataMasker(new SensitiveDataMaskingOptions());
+        var value = new string("ordinary-value".ToCharArray());
+
+        var result = masker.Mask(value);
+
+        Assert.Same(value, result);
+    }
+
+    [Fact]
+    public void MaskReturnsSimpleValueUnchanged()
+    {
+        var masker = new SensitiveDataMasker(new SensitiveDataMaskingOptions());
+
+        var result = masker.Mask(42);
+
+        Assert.Equal(42, result);
+        Assert.IsType<int>(result);
+    }
+
+    [Fact]
+    public void MaskStillAppliesFieldRulesBeforeScalarFastPath()
+    {
+        var masker = new SensitiveDataMasker(new SensitiveDataMaskingOptions());
+
+        var result = masker.Mask("secret-value", "password");
+
+        Assert.Equal("[REDACTED]", result);
+    }
+
+    [Fact]
     public void ReflectionMetadataIsCachedPerType()
     {
         var masker = new SensitiveDataMasker(new SensitiveDataMaskingOptions());

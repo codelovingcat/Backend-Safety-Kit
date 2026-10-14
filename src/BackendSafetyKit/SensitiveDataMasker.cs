@@ -45,8 +45,25 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
     /// <inheritdoc />
     public object? Mask(object? value, string? fieldName = null)
     {
+        if (value is null)
+        {
+            return null;
+        }
+
+        var rule = FindRule(fieldName);
+
+        if (rule.HasValue)
+        {
+            return ApplyRule(value, rule.Value);
+        }
+
+        if (value is string || IsSimpleValue(value.GetType()))
+        {
+            return value;
+        }
+
         var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
-        return MaskCore(value, fieldName, depth: 0, visited);
+        return MaskCore(value, fieldName, depth: 0, visited, fieldNameAlreadyChecked: true);
     }
 
     /// <inheritdoc />
@@ -68,18 +85,22 @@ public sealed class SensitiveDataMasker : ISensitiveDataMasker
         object? value,
         string? fieldName,
         int depth,
-        HashSet<object> visited)
+        HashSet<object> visited,
+        bool fieldNameAlreadyChecked = false)
     {
         if (value is null)
         {
             return null;
         }
 
-        var rule = FindRule(fieldName);
-
-        if (rule.HasValue)
+        if (!fieldNameAlreadyChecked)
         {
-            return ApplyRule(value, rule.Value);
+            var rule = FindRule(fieldName);
+
+            if (rule.HasValue)
+            {
+                return ApplyRule(value, rule.Value);
+            }
         }
 
         if (value is string)
