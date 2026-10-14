@@ -42,7 +42,7 @@ public sealed class BackendSafetyRedisRuntimeTests
                 entries.Length < eventCount,
                 $"Expected approximate Redis stream trimming below {eventCount} entries, got {entries.Length}.");
 
-            var finalEntry = Assert.Single(entries.Where(entry => GetField(entry, "name") == lastEventName));
+            var finalEntry = Assert.Single(entries, entry => GetField(entry, "name") == lastEventName);
             var propertiesJson = GetField(finalEntry, "properties");
             Assert.NotNull(propertiesJson);
             using var properties = JsonDocument.Parse(propertiesJson);
@@ -232,7 +232,7 @@ public sealed class BackendSafetyRedisRuntimeTests
                 EventId eventId,
                 TState state,
                 Exception? exception,
-                Func<TState, Exception?, string> formatter) where TState : notnull
+                Func<TState, Exception?, string> formatter)
             {
                 if (IsEnabled(logLevel))
                 {
