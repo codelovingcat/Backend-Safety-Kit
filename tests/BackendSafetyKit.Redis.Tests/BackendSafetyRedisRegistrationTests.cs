@@ -1,4 +1,4 @@
-using BackendSafetyKit.Abstractions;
+﻿using BackendSafetyKit.Abstractions;
 using BackendSafetyKit.Redis;
 using BackendSafetyKit.Redis.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
