@@ -117,8 +117,13 @@ class NuGetPackageValidatorTests(unittest.TestCase):
             self._write_package(package_id, **arguments)
 
     def _run_validator(self) -> None:
-        with redirect_stdout(io.StringIO()):
-            validator.main()
+        original_argv = sys.argv
+        try:
+            sys.argv = ["validate_nuget_packages.py", str(self.output)]
+            with redirect_stdout(io.StringIO()):
+                validator.main()
+        finally:
+            sys.argv = original_argv
 
     def test_accepts_all_expected_packages_and_matching_symbol_archives(self) -> None:
         self._populate()
