@@ -12,4 +12,7 @@
   <Folder Name="/samples/">
     <Project Path="samples/BackendSafetyKit.SampleApi/BackendSafetyKit.SampleApi.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/BackendSafetyKit.Benchmarks/BackendSafetyKit.Benchmarks.csproj" />
+  </Folder>
 </Solution>

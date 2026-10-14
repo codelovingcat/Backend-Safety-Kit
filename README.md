@@ -756,6 +756,8 @@ Avoid:
 
 Backend Safety Kit runs on the request path, so performance matters.
 
+A separate BenchmarkDotNet project is available for repeatable local measurements of sensitive-data masking and request-pipeline overhead. See [BENCHMARKS.md](BENCHMARKS.md) for run instructions. Benchmark results are environment-dependent and are not treated as CI performance guarantees.
+
 Rules:
 
 - Avoid unnecessary allocations.
