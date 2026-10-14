@@ -11,6 +11,7 @@ from xml.etree import ElementTree
 
 PROJECTS = {
     "BackendSafetyKit": "src/BackendSafetyKit/BackendSafetyKit.csproj",
+    "BackendSafetyKit.Redis": "src/BackendSafetyKit.Redis/BackendSafetyKit.Redis.csproj",
     "BackendSafetyKit.AspNetCore": "src/BackendSafetyKit.AspNetCore/BackendSafetyKit.AspNetCore.csproj",
     "BackendSafetyKit.OpenTelemetry": "src/BackendSafetyKit.OpenTelemetry/BackendSafetyKit.OpenTelemetry.csproj",
 }
