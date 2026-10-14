@@ -10,6 +10,7 @@ from xml.etree import ElementTree
 
 EXPECTED = {
     "BackendSafetyKit": set(),
+    "BackendSafetyKit.Redis": {"BackendSafetyKit", "Microsoft.Extensions.Hosting.Abstractions", "StackExchange.Redis"},
     "BackendSafetyKit.AspNetCore": {"BackendSafetyKit"},
     "BackendSafetyKit.OpenTelemetry": {
         "BackendSafetyKit",
