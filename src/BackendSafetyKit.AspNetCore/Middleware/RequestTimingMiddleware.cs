@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using BackendSafetyKit;
+using BackendSafetyKit.Abstractions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -9,7 +10,8 @@ namespace BackendSafetyKit.AspNetCore.Middleware;
 internal sealed partial class RequestTimingMiddleware(
     RequestDelegate next,
     IOptions<BackendSafetyOptions> options,
-    ILogger<RequestTimingMiddleware> logger)
+    ILogger<RequestTimingMiddleware> logger,
+    IEnumerable<IBackendSafetyDiagnosticSink>? diagnosticSinks = null)
 {
     internal static readonly object TimingItemKey = new();
 
@@ -62,6 +64,7 @@ internal sealed partial class RequestTimingMiddleware(
 
             RecordMetrics(timing);
             InvokeCompletionHook(timingOptions, timing);
+            WriteDiagnosticEvent(timing);
         }
     }
 
@@ -95,6 +98,64 @@ internal sealed partial class RequestTimingMiddleware(
             LogCompletionHookFailure(logger, exception);
         }
     }
+
+    private void WriteDiagnosticEvent(RequestTimingContext timing)
+    {
+        var eventName = timing.StatusCode >= 500
+            ? BackendSafetyDiagnosticEventNames.HttpRequestServerError
+            : timing.StatusCode >= 400
+                ? BackendSafetyDiagnosticEventNames.HttpRequestClientError
+                : BackendSafetyDiagnosticEventNames.HttpRequestCompleted;
+
+        var severity = timing.StatusCode >= 500
+            ? BackendSafetyDiagnosticSeverity.Error
+            : timing.StatusCode >= 400 || timing.IsSlow
+                ? BackendSafetyDiagnosticSeverity.Warning
+                : BackendSafetyDiagnosticSeverity.Information;
+
+        var properties = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            [BackendSafetyDiagnosticPropertyNames.HttpRequestMethod] = NormalizeMethod(timing.Method),
+            [BackendSafetyDiagnosticPropertyNames.HttpResponseStatusCode] = timing.StatusCode,
+            [BackendSafetyDiagnosticPropertyNames.HttpServerDurationMilliseconds] =
+                Math.Round(Math.Max(0, timing.Duration.TotalMilliseconds), 3),
+            [BackendSafetyDiagnosticPropertyNames.RequestIsSlow] = timing.IsSlow
+        };
+
+        var diagnosticEvent = new BackendSafetyDiagnosticEvent(
+            eventName,
+            DateTimeOffset.UtcNow,
+            severity,
+            properties);
+
+        foreach (var diagnosticSink in diagnosticSinks ?? Array.Empty<IBackendSafetyDiagnosticSink>())
+        {
+            try
+            {
+                diagnosticSink.Write(diagnosticEvent);
+            }
+            catch (Exception)
+            {
+                // A custom sink must never interrupt or fail an HTTP request.
+                LogDiagnosticSinkFailure(logger);
+            }
+        }
+    }
+
+    private static string NormalizeMethod(string method) =>
+        method.ToUpperInvariant() switch
+        {
+            "CONNECT" => "CONNECT",
+            "DELETE" => "DELETE",
+            "GET" => "GET",
+            "HEAD" => "HEAD",
+            "OPTIONS" => "OPTIONS",
+            "PATCH" => "PATCH",
+            "POST" => "POST",
+            "PUT" => "PUT",
+            "TRACE" => "TRACE",
+            _ => "OTHER"
+        };
 
     private static LogLevel ToLogLevel(RequestTimingLogLevel logLevel) =>
         logLevel switch
@@ -135,4 +196,10 @@ internal sealed partial class RequestTimingMiddleware(
     private static partial void LogCompletionHookFailure(
         ILogger logger,
         Exception exception);
+
+    [LoggerMessage(
+        EventId = 3004,
+        Level = LogLevel.Error,
+        Message = "A diagnostic event sink failed.")]
+    private static partial void LogDiagnosticSinkFailure(ILogger logger);
 }

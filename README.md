@@ -331,6 +331,38 @@ builder.Services.AddBackendSafety(options =>
 
 The completion callback receives only safe diagnostic metadata: method, path, status code, correlation ID, duration, and slow-request state. Request bodies and query strings are not included.
 
+### 8. Public Diagnostic Event Contract
+
+The ASP.NET Core request-timing middleware can publish a dependency-free, structured diagnostic event to each registered `IBackendSafetyDiagnosticSink`. Register a sink in dependency injection; no exporter, telemetry SDK, or network connection is added by the core package:
+
+```csharp
+using BackendSafetyKit;
+using BackendSafetyKit.Abstractions;
+
+public sealed class ApplicationDiagnosticSink : IBackendSafetyDiagnosticSink
+{
+    public void Write(BackendSafetyDiagnosticEvent diagnosticEvent)
+    {
+        // Send the approved event to your application's existing diagnostics system.
+        Console.WriteLine($"{diagnosticEvent.Timestamp:O} {diagnosticEvent.Severity} {diagnosticEvent.Name}");
+    }
+}
+
+builder.Services.AddSingleton<IBackendSafetyDiagnosticSink, ApplicationDiagnosticSink>();
+```
+
+The public event contract exposes stable event names through `BackendSafetyDiagnosticEventNames` and stable property names through `BackendSafetyDiagnosticPropertyNames`:
+
+| Event | Severity | When emitted |
+|---|---|---|
+| `BackendSafetyKit.HttpRequest.Completed` | Information, or Warning when slow | A request completes with a status below 400 |
+| `BackendSafetyKit.HttpRequest.ClientError` | Warning | A request completes with a 4xx status code |
+| `BackendSafetyKit.HttpRequest.ServerError` | Error | A request completes with a 5xx status code |
+
+Each event contains a UTC timestamp and the following allowlisted properties: normalized HTTP method, response status code, duration in milliseconds, and whether the slow-request threshold was reached. Paths, query strings, correlation IDs, request/response headers, bodies, and exception details are deliberately excluded to reduce data-leakage and cardinality risks.
+
+`BackendSafetyDiagnosticEvent.Properties` is a read-only snapshot. Exceptions from custom sinks are isolated: they do not fail or interrupt the request and are logged as event ID `3004`. Events are published by the request-timing middleware, so disabling `Features.EnableRequestTiming` also disables this event stream.
+
 ### 8. Metrics
 
 The kit exposes a dependency-free `System.Diagnostics.Metrics.Meter` named `BackendSafetyKit`.

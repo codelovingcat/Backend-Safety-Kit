@@ -1,4 +1,5 @@
 using BackendSafetyKit;
+using BackendSafetyKit.Abstractions;
 using BackendSafetyKit.AspNetCore.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -156,6 +157,81 @@ public sealed class RequestTimingMiddlewareTests
                 x.LogLevel == LogLevel.Error);
     }
 
+    [Fact]
+    public async Task DiagnosticSinkReceivesStableEventWithOnlyLowCardinalityProperties()
+    {
+        var sink = new RecordingDiagnosticSink();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IBackendSafetyDiagnosticSink>(sink);
+        services.AddBackendSafety(options =>
+        {
+            options.RequestTiming.SlowRequestThreshold = TimeSpan.FromDays(1);
+        });
+
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        context.Request.QueryString = "?apiKey=query-secret";
+        context.Request.Headers["X-Correlation-ID"] = "correlation-secret";
+        context.Request.Headers.Authorization = "Bearer header-secret";
+
+        await InvokeAsync(app, services, context);
+
+        var diagnosticEvent = Assert.Single(sink.Events);
+        Assert.Equal(
+            BackendSafetyDiagnosticEventNames.HttpRequestCompleted,
+            diagnosticEvent.Name);
+        Assert.Equal(BackendSafetyDiagnosticSeverity.Information, diagnosticEvent.Severity);
+        Assert.Equal("GET", diagnosticEvent.Properties[BackendSafetyDiagnosticPropertyNames.HttpRequestMethod]);
+        Assert.Equal(StatusCodes.Status204NoContent,
+            diagnosticEvent.Properties[BackendSafetyDiagnosticPropertyNames.HttpResponseStatusCode]);
+        Assert.False((bool)diagnosticEvent.Properties[BackendSafetyDiagnosticPropertyNames.RequestIsSlow]!);
+        Assert.IsType<double>(
+            diagnosticEvent.Properties[BackendSafetyDiagnosticPropertyNames.HttpServerDurationMilliseconds]);
+        Assert.Equal(4, diagnosticEvent.Properties.Count);
+        Assert.DoesNotContain("http.request.path", diagnosticEvent.Properties.Keys);
+        Assert.DoesNotContain("correlation-secret", string.Join("|", diagnosticEvent.Properties.Values));
+        Assert.DoesNotContain("query-secret", string.Join("|", diagnosticEvent.Properties.Values));
+        Assert.DoesNotContain("header-secret", string.Join("|", diagnosticEvent.Properties.Values));
+        Assert.True(diagnosticEvent.Timestamp <= DateTimeOffset.UtcNow);
+    }
+
+    [Fact]
+    public async Task DiagnosticSinkFailureDoesNotBreakRequestOrBlockOtherSinks()
+    {
+        var loggerProvider = new RecordingLoggerProvider();
+        var sink = new RecordingDiagnosticSink();
+        var services = new ServiceCollection();
+        services.AddLogging(builder => builder.AddProvider(loggerProvider));
+        services.AddSingleton<IBackendSafetyDiagnosticSink, ThrowingDiagnosticSink>();
+        services.AddSingleton<IBackendSafetyDiagnosticSink>(sink);
+        services.AddBackendSafety();
+
+        var app = BuildPipeline(
+            services,
+            context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            });
+
+        var context = CreateContext();
+        await InvokeAsync(app, services, context);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        Assert.Single(sink.Events);
+        Assert.Contains(
+            loggerProvider.Entries,
+            entry => entry.EventId == 3004 && entry.LogLevel == LogLevel.Error);
+    }
+
     private static ServiceCollection CreateServices(
         Action<BackendSafetyOptions>? configure = null)
     {
@@ -261,6 +337,22 @@ public sealed class RequestTimingMiddlewareTests
             {
             }
         }
+    }
+
+    private sealed class RecordingDiagnosticSink : IBackendSafetyDiagnosticSink
+    {
+        private readonly List<BackendSafetyDiagnosticEvent> events = new();
+
+        public IReadOnlyList<BackendSafetyDiagnosticEvent> Events => events;
+
+        public void Write(BackendSafetyDiagnosticEvent diagnosticEvent) =>
+            events.Add(diagnosticEvent);
+    }
+
+    private sealed class ThrowingDiagnosticSink : IBackendSafetyDiagnosticSink
+    {
+        public void Write(BackendSafetyDiagnosticEvent diagnosticEvent) =>
+            throw new InvalidOperationException("sink failure");
     }
 
     private sealed record LogEntry(
