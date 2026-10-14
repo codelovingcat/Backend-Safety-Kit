@@ -14,6 +14,7 @@ Keep the core primitives package and OpenTelemetry integration optional accordin
 
 ```csharp
 using BackendSafetyKit.AspNetCore.DependencyInjection;
+using BackendSafetyKit.AspNetCore.Health;
 
 var builder = WebApplication.CreateBuilder(args);
 
