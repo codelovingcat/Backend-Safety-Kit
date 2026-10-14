@@ -125,6 +125,13 @@ internal sealed class HttpSecurityMiddleware(
             headers["Content-Security-Policy"] = options.ContentSecurityPolicy;
         }
 
+        if (options.EnableContentSecurityPolicyReportOnlyHeader &&
+            !headers.ContainsKey("Content-Security-Policy-Report-Only"))
+        {
+            headers["Content-Security-Policy-Report-Only"] =
+                options.ContentSecurityPolicyReportOnly;
+        }
+
         if (options.EnableHsts &&
             context.Request.IsHttps &&
             !headers.ContainsKey("Strict-Transport-Security"))
