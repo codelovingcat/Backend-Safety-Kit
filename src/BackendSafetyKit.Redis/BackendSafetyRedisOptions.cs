@@ -1,4 +1,4 @@
-namespace BackendSafetyKit.Redis;
+﻿namespace BackendSafetyKit.Redis;
 
 /// <summary>
 /// Configures the optional Redis Streams diagnostic sink.
