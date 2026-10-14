@@ -12,8 +12,9 @@ dotnet build BackendSafetyKit.slnx --configuration Release --no-restore
 dotnet test BackendSafetyKit.slnx --configuration Release --no-build
 dotnet pack BackendSafetyKit.slnx --configuration Release --no-build --output ./artifacts
 python scripts/validate_nuget_packages.py ./artifacts
+python scripts/test_nuget_consumers.py ./artifacts
 ~~~
 
-The validator uses Python's standard library only. It inspects the actual archives rather than assuming that a successful dotnet pack necessarily produced complete consumer packages.
+The validators use Python's standard library only. The consumer smoke test then creates five temporary .NET 10 projects, each referencing exactly one packed Backend Safety Kit package. It restores the product packages from a temporary local feed, restores their third-party dependencies from NuGet.org, compiles each project against public APIs, and inspects each `project.assets.json` file to catch unintended Redis/EF Core dependency leakage. No test package is published, and no NuGet.org credentials are needed.
 
 Package publishing credentials and publishing actions are intentionally outside the build and validation workflow. CI checks artifacts but does not publish packages or make release-time network calls.

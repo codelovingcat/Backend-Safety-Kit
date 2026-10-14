@@ -51,3 +51,6 @@ jobs:
 
       - name: Validate NuGet packages
         run: python scripts/validate_nuget_packages.py ./artifacts
+
+      - name: Test clean NuGet consumers
+        run: python scripts/test_nuget_consumers.py ./artifacts
