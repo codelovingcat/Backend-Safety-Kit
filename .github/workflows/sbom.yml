@@ -85,6 +85,8 @@ jobs:
         with:
           name: backend-safety-kit-sbom
           path: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
             ./artifacts/backend-safety-kit.sbom.json
             ./artifacts/SHA256SUMS.txt
           if-no-files-found: error
