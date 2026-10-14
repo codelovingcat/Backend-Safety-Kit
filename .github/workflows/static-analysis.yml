@@ -1,0 +1,32 @@
+name: Static analysis and warning policy
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore BackendSafetyKit.slnx
+
+      - name: Build with analyzers and warnings as errors
+        run: dotnet build BackendSafetyKit.slnx --configuration Release --no-restore -warnaserror
+
+      - name: Test
+        run: dotnet test BackendSafetyKit.slnx --configuration Release --no-build --verbosity normal
