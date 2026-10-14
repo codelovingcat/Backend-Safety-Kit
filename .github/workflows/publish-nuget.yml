@@ -15,6 +15,8 @@ jobs:
     environment: nuget-production
     permissions:
       contents: read
+      id-token: write
+      attestations: write
     env:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       VERSION_TAG: ${{ github.ref_name }}
@@ -37,42 +39,7 @@ jobs:
             echo "Release tags must start with v." >&2
             exit 1
           fi
-          version="${VERSION_TAG#v}"
-          python - "$version" <<'PY'
-          import re
-          import sys
-          import xml.etree.ElementTree as ET
-
-          semver = re.compile(
-              r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
-              r"(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
-              r"(?:\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?"
-              r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
-          )
-
-          expected = {
-              "BackendSafetyKit": "src/BackendSafetyKit/BackendSafetyKit.csproj",
-              "BackendSafetyKit.AspNetCore": "src/BackendSafetyKit.AspNetCore/BackendSafetyKit.AspNetCore.csproj",
-              "BackendSafetyKit.OpenTelemetry": "src/BackendSafetyKit.OpenTelemetry/BackendSafetyKit.OpenTelemetry.csproj",
-          }
-          version = sys.argv[1]
-          if not semver.fullmatch(version):
-              raise SystemExit(f"Release version {version!r} is not valid SemVer 2.0.0")
-          for package_id, name in expected.items():
-              root = ET.parse(name).getroot()
-              values = {
-                  element.text.strip()
-                  for element in root.iter()
-                  if element.tag.rsplit("}", 1)[-1] == "Version" and element.text
-              }
-              ids = {
-                  element.text.strip()
-                  for element in root.iter()
-                  if element.tag.rsplit("}", 1)[-1] == "PackageId" and element.text
-              }
-              if ids != {package_id} or values != {version}:
-                  raise SystemExit(f"{name} must declare {package_id} version {version}; found ids={ids}, versions={values}")
-          PY
+          python scripts/check_package_versions.py --tag "$VERSION_TAG"
           if [[ -z "${NUGET_API_KEY:-}" ]]; then
             echo "Configure the NUGET_API_KEY secret in the nuget-production environment." >&2
             exit 1
@@ -93,6 +60,20 @@ jobs:
       - name: Validate NuGet artifacts
         run: python scripts/validate_nuget_packages.py ./artifacts
 
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./artifacts
+          format: cyclonedx-json
+          output-file: ./artifacts/backend-safety-kit.sbom.json
+          upload-artifact: true
+          artifact-name: backend-safety-kit-release-sbom
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: ./artifacts/*
+
       - name: Publish packages and symbols
         shell: bash
         run: |
@@ -100,5 +81,8 @@ jobs:
           shopt -s nullglob
           for package in ./artifacts/*.nupkg ./artifacts/*.snupkg; do
             echo "Publishing $(basename "$package")"
-            dotnet nuget push "$package"               --api-key "$NUGET_API_KEY"               --source https://api.nuget.org/v3/index.json               --skip-duplicate
+            dotnet nuget push "$package" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
           done
