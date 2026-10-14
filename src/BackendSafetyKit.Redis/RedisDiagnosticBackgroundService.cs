@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using BackendSafetyKit;
 using Microsoft.Extensions.Hosting;
@@ -8,7 +8,7 @@ using StackExchange.Redis;
 
 namespace BackendSafetyKit.Redis;
 
-internal sealed class RedisDiagnosticBackgroundService(
+internal sealed partial class RedisDiagnosticBackgroundService(
     RedisDiagnosticQueue queue,
     IOptions<BackendSafetyRedisOptions> options,
     IConnectionMultiplexer connection,
@@ -40,10 +40,14 @@ internal sealed class RedisDiagnosticBackgroundService(
             catch (Exception exception) when (
                 exception is RedisException or TimeoutException or JsonException or NotSupportedException)
             {
-                logger.LogWarning(
-                    exception,
-                    "A Backend Safety diagnostic event could not be written to Redis and was dropped.");
+                LogRedisWriteFailure(logger, exception);
             }
         }
     }
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "A Backend Safety diagnostic event could not be written to Redis and was dropped.")]
+    private static partial void LogRedisWriteFailure(
+        ILogger logger,
+        Exception exception);
 }
