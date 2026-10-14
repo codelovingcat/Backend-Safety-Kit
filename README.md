@@ -23,6 +23,12 @@ Backend Safety Kit packages those concerns into a reusable layer while staying o
 
 Security architecture and private vulnerability-reporting guidance are documented in [SECURITY.md](SECURITY.md).
 
+## Compatibility and Release Engineering
+
+The repository validates public API compatibility against each pull request's base commit, treats missing XML documentation on public APIs as a build error, and inspects the contents and metadata of packed NuGet artifacts.
+
+Framework support is documented in [the framework support policy](docs/framework-support.md). XML documentation and package validation are described in [NuGet release readiness](docs/nuget-release-readiness.md), with debugging symbols and Source Link covered in [symbols and Source Link](docs/symbols-and-sourcelink.md).
+
 ## Intended Developer Experience
 
 The common case should be close to this:
