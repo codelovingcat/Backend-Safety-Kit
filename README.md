@@ -705,16 +705,14 @@ It registers the package's existing:
 
 It does not add exporters or automatic ASP.NET Core instrumentation, so applications retain control over resource attributes, sampling, exporters, and transport.
 
-### Future Optional Packages
+### Optional Provider Packages
 
-Provider-specific integrations should be separate packages.
+Provider-specific integrations remain separate packages so the core dependency graph stays small.
 
-Possible examples:
+- **Redis diagnostics** — `BackendSafetyKit.Redis` provides a bounded asynchronous Redis Streams sink for safe diagnostic events. See the [Redis integration guide](https://github.com/codelovingcat/Backend-Safety-Kit/blob/main/docs/redis-integration.md).
+- **Entity Framework Core diagnostics** — `BackendSafetyKit.EntityFrameworkCore` emits safe SaveChanges completion/failure events without logging SQL or entity values. See the [EF Core integration guide](https://github.com/codelovingcat/Backend-Safety-Kit/blob/main/docs/entity-framework-core-integration.md).
 
-```text
-BackendSafetyKit.Redis
-BackendSafetyKit.EntityFrameworkCore
-```
+Install only the provider integration an application actually uses. Neither optional package is required by the core package, and neither creates provider infrastructure or makes hidden network calls.
 
 The core packages must not become dependency magnets.
 
