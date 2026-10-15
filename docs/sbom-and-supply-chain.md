@@ -6,7 +6,7 @@ The SBOM workflow first restores, builds, tests, packs, and validates the NuGet 
 
 ## Release provenance
 
-The protected `nuget-production` release workflow generates an SBOM for its release artifacts and creates GitHub build-provenance attestations for those files before publishing. A release requires a matching SemVer tag, passing tests and package validation, and the environment's `NUGET_API_KEY` secret. Ordinary pull-request CI never publishes packages.
+The protected `nuget-production` release workflow generates an SBOM for its release artifacts and creates GitHub build-provenance attestations for those files before publishing. A release requires a matching SemVer tag, passing tests and package validation, and a NuGet.org Trusted Publishing policy bound to `codelovingcat/Backend-Safety-Kit`, `publish-nuget.yml`, and the `nuget-production` environment; no long-lived NuGet API key is stored in GitHub. Ordinary pull-request CI never publishes packages.
 
 Consumers can inspect attestations in the GitHub repository's artifact attestations interface and verify package checksums against the exact release artifacts. Treat a valid attestation as evidence of the recorded build provenance, not as a guarantee that a package is free from vulnerabilities.
 

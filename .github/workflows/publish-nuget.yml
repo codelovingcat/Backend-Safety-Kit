@@ -28,7 +28,6 @@ jobs:
       id-token: write
       attestations: write
     env:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       VERSION_TAG: ${{ github.ref_name }}
     steps:
       - name: Checkout tagged source
@@ -50,10 +49,6 @@ jobs:
             exit 1
           fi
           python scripts/check_package_versions.py --tag "$VERSION_TAG"
-          if [[ -z "${NUGET_API_KEY:-}" ]]; then
-            echo "Configure the NUGET_API_KEY secret in the nuget-production environment." >&2
-            exit 1
-          fi
 
       - name: Restore
         run: dotnet restore BackendSafetyKit.slnx
@@ -116,8 +111,16 @@ jobs:
         with:
           subject-path: ./artifacts/*
 
+      - name: NuGet login (OIDC to temporary API key)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: Urem
+
       - name: Publish packages and symbols
         shell: bash
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
           set -euo pipefail
           shopt -s nullglob
