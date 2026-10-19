@@ -95,7 +95,7 @@ jobs:
           sha256sum --check SHA256SUMS.txt
 
       - name: Upload SBOM and checksums
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-safety-kit-release-sbom-and-checksums
           path: |
